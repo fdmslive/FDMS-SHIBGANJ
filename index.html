@@ -2,6 +2,8 @@
 <html lang="bn">
 
 <head>
+  <!-- FDMS Shibganj V12.4 (2026-11-27): ফেরত আসা কৃষকের nidIndex/mobileIndex/khatianDagIndex-এ নিবন্ধিত মান হুবহু রাখা — গ্রাম/মৌজা/দাগ/খতিয়ান ভিন্ন লিখলে আর permission_denied হবে না; ডিলারকে সতর্কবার্তা। -->
+  <!-- FDMS Shibganj V12.3: ডেভেলপার শিক্ষা ও দক্ষতা; Firebase Rules মার্জ। -->
   <!-- FDMS Shibganj V12.2 (2026-11-27): UAO নয়ন মিয়ার ছবি; ডিলার/UNO পেজের নোট সরানো; ওয়েব অ্যাপ (manifest.webmanifest + sw.js + icons/)। -->
   <!-- FDMS Shibganj V12.1 (2026-11-27): উপসহকারী কৃষি কর্মকর্তা (SAAO) লগইন — saao/{uid}, saaoDealers/{uid}/{dealerId}; নির্ধারিত ডিলারের বিতরণ ইতিহাস (পেজভিত্তিক), অডিট, CSV; হোমপেজে UAO ছবি publicConfig/uaoPhoto থেকে। -->
   <!-- FDMS Shibganj V12.0 (2026-11-27): উপজেলা কৃষি অফিসার কৃষিবিদ মো: নয়ন মিয়া; Excel টেবিল অনুযায়ী ১৮ ফসলের প্রতি-বিঘা বরাদ্দ; বরাদ্দযোগ্য জমির সীমা (ডিফল্ট ৫ বিঘা); ড্যাশবোর্ডে NID/মোবাইল দিয়ে যোগ্যতা যাচাই; UI unslop পাস। -->
@@ -3865,7 +3867,7 @@
       <nav id="sidebar"></nav>
       <main id="mainContent"></main>
     </div>
-    <div class="app-footer">FDMS V12.3 · © Fertilizer Distribution Management System — All Rights Reserved · Developed by Hridoy
+    <div class="app-footer">FDMS V12.6 · © Fertilizer Distribution Management System — All Rights Reserved · Developed by Hridoy
       Hasan Rafi</div>
   </div>
 
@@ -4203,6 +4205,45 @@
     function normalizeAdminStockRow(row) {
       return { received: Number(row && row.received) || 0, allocated: Number(row && row.allocated) || 0, available: Number(row && row.available) || 0 };
     }
+    /* V12.6 — ROOT CAUSE of dealer "permission_denied" on distribution:
+       every dealer-side stock change is ONE transaction on the whole node dealerStock/{dealerId}.
+       The Rules' dealerStock/$dealerId/$fertilizer ".validate" runs for EVERY fertilizer row in
+       that node — also the rows this distribution does not touch — and requires
+       received − distributed − available = 0 with all three numeric. A single legacy row whose
+       numbers do not add up (or that has no "distributed") made EVERY distribution of that dealer
+       fail with permission_denied. healStockNode() keeps received (what the office gave) and
+       available (what is physically left) exactly as stored and derives "distributed" from them,
+       so the row satisfies the Rules again; rows that are not plain numbers are left untouched
+       (the V12.6 Rules let an unchanged row through) and are reported by diagnoseDealerStock(). */
+    function stockRowIsNumeric(r) {
+      return !!r && typeof r === 'object' && typeof r.received === 'number' && typeof r.available === 'number' && isFinite(r.received) && isFinite(r.available)
+        && (r.distributed === undefined || r.distributed === null || (typeof r.distributed === 'number' && isFinite(r.distributed)));
+    }
+    function healStockRow(r) {
+      if (!stockRowIsNumeric(r)) return r;
+      const dist = typeof r.distributed === 'number' ? r.distributed : null;
+      if (dist !== null && Math.abs(r.received - dist - r.available) < 0.001) return r; // already consistent
+      const derived = Math.round((r.received - r.available) * 1000) / 1000;
+      if (!(derived >= 0)) return r; // available > received — cannot be healed here, diagnosed instead
+      return { received: r.received, distributed: derived, available: r.available };
+    }
+    function healStockNode(node) {
+      Object.keys(node || {}).forEach(f => { node[f] = healStockRow(node[f]); });
+      return node;
+    }
+    // Plain-language list of rows the Rules would reject (no farmer data).
+    function diagnoseDealerStock(node) {
+      const out = [];
+      Object.keys(node || {}).forEach(f => {
+        const r = node[f];
+        if (!r || typeof r !== 'object') { out.push(`${f}: পুরনো ফরম্যাট (শুধু সংখ্যা)`); return; }
+        if (!stockRowIsNumeric(r)) { out.push(`${f}: মান সংখ্যা নয়`); return; }
+        if (r.available < 0 || r.received < 0 || (typeof r.distributed === 'number' && r.distributed < 0)) { out.push(`${f}: ঋণাত্মক মান`); return; }
+        if (r.available > r.received + 0.001) { out.push(`${f}: মজুদ (${r.available}) প্রাপ্তের (${r.received}) চেয়ে বেশি`); return; }
+        if (typeof r.distributed !== 'number' || Math.abs(r.received - r.distributed - r.available) >= 0.001) out.push(`${f}: হিসাব অমিল (প্রাপ্ত ${r.received} − বিতরণ ${r.distributed === undefined ? 'নেই' : r.distributed} ≠ মজুদ ${r.available})`);
+      });
+      return out;
+    }
     // ---- Cache-warmup wrapper for Firebase transactions on adminStock/dealerStock ----
     // runTransaction()'s updater function can be invoked with `current = null` on
     // its VERY FIRST call whenever the SDK has no locally-cached value for that
@@ -4290,7 +4331,7 @@
       const txResult = await runStockTransactionWithCacheWarmup(stockRef, (current) => {
         shortfall = null;
         before = {};
-        const node = Object.assign({}, current || {});
+        const node = healStockNode(Object.assign({}, current || {}));
         for (const it of items) {
           const row = normalizeStockRow(node[it.fertilizer]);
           if (it.quantity > row.available) { shortfall = { fertilizer: it.fertilizer, available: row.available }; return undefined; } // abort — nothing written for ANY item
@@ -4314,10 +4355,12 @@
       if (!items || !items.length) return;
       const stockRef = ref(db, `dealerStock/${dealerId}`);
       await runStockTransactionWithCacheWarmup(stockRef, (current) => {
-        const node = Object.assign({}, current || {});
+        const node = healStockNode(Object.assign({}, current || {}));
         for (const it of items) {
           const row = normalizeStockRow(node[it.fertilizer]);
-          node[it.fertilizer] = { received: row.received, distributed: Math.max(0, row.distributed - it.quantity), available: row.available + it.quantity };
+          // received − distributed − available must stay 0 (Rules) → distributed is derived, never clamped apart from available
+          const avail = row.available + it.quantity;
+          node[it.fertilizer] = { received: row.received, distributed: Math.max(0, Math.round((row.received - avail) * 1000) / 1000), available: avail };
         }
         return node;
       });
@@ -8211,6 +8254,44 @@
       const lockCrops = conflicts.map(lockCropLabel);
       return { id: latest.recordId, date: latest.date, dealerName: latest.dealerName, cropName: lockCrops.join(', '), _lockCrops: lockCrops, _nextDate: latestNextDate(conflicts) };
     }
+    /* V12.6 — structured failure log for a distribution save. Logs the Firebase error code, the
+       stage and the exact database path that was refused, the signed-in UID, the dealer's status,
+       the season and any stock rows the Rules would reject. Never logs NID/mobile/name or keys. */
+    // Read-only mirror of the Rules conditions on the paths of a distribution commit.
+    function diagnoseCommitRefusal(multi, ctx) {
+      const out = [], uid = auth.currentUser ? auth.currentUser.uid : '';
+      const same = (a, b) => JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b);
+      Object.keys(multi).forEach(k => {
+        const v = multi[k] || {}, top = k.split('/')[0];
+        if (top === 'distributions' && v.dealerId !== uid) out.push('distributions (dealerId ≠ UID)');
+        if (top === 'stockHistory' && (k.split('/')[1] !== uid || v.transactionType !== 'DISTRIBUTION')) out.push('stockHistory (UID/ধরন)');
+        if (top === 'nidIndex' && ctx.nidRaw) {
+          const r = ctx.nidRaw;
+          if (!same(r.mobile, v.mobile)) out.push('nidIndex (mobile)');
+          ['farmerName', 'landArea'].forEach(f => { if (r[f] !== undefined && r[f] !== null && !same(r[f], v[f])) out.push(`nidIndex (${f})`); });
+          ['village', 'mouza', 'dagNumber', 'khatianNumber'].forEach(f => { if (r[f] && !same(r[f], v[f])) out.push(`nidIndex (${f})`); });
+        }
+        if (top === 'mobileIndex' && ctx.mobRaw && !same(ctx.mobRaw.nid, v.nid)) out.push('mobileIndex (nid)');
+        if (top === 'khatianDagIndex' && ctx.landRaw && !same(ctx.landRaw.nid, v.nid)) out.push('khatianDagIndex (nid)');
+      });
+      if (!out.length) out.push('distributions/stockHistory/সূচক — শর্ত মিলেছে; ডিলার স্ট্যাটাস বা Rules সংস্করণ দেখুন');
+      return out;
+    }
+    async function logDistFailure(stage, path, err, ctx) {
+      const code = (err && (err.code || err.message)) || 'unknown';
+      let status = '?', stockIssues = [];
+      try { status = String((await dbGet(`dealers/${ctx.dealerId}/status`)) ?? 'নেই'); } catch (e) { status = 'পড়া যায়নি'; }
+      if (/dealerStock/.test(path)) {
+        try { stockIssues = diagnoseDealerStock(((await get(ref(db, `dealerStock/${ctx.dealerId}`))).val()) || {}); } catch (e) { stockIssues = ['স্টক পড়া যায়নি']; }
+      }
+      const uid = auth.currentUser ? auth.currentUser.uid : '-';
+      const msg = `ধাপ: ${stage} | কোড: ${code} | path: ${path} | UID: ${uid} | ডিলার: ${ctx.dealerId} | ডিলার স্ট্যাটাস: ${status} | সিজন: ${ctx.seasonId || '-'}${stockIssues.length ? ` | স্টক সমস্যা: ${stockIssues.join('; ')}` : ''}${ctx.batchId ? ` | ব্যাচ ${ctx.batchId}` : ''}`;
+      writeSystemLog('error', 'distribution_create_failed', msg);
+      console.error('[FDMS] distribution failed —', msg, err);
+      if (status !== 'active' && status !== '?' ) return `আপনার ডিলার অ্যাকাউন্ট সক্রিয় নেই (স্ট্যাটাস: ${status}) — উপজেলা কৃষি অফিসে যোগাযোগ করুন। কিছুই সংরক্ষণ হয়নি।`;
+      if (stockIssues.length) return `আপনার স্টকের হিসাবে সমস্যা আছে (${stockIssues.join('; ')}) — উপজেলা কৃষি অফিসকে "স্টক সমন্বয়" করতে বলুন। কিছুই সংরক্ষণ হয়নি।`;
+      return `সংরক্ষণ করা যায়নি (${stage}: ${code}) — কিছুই সংরক্ষণ হয়নি। সিস্টেম লগে বিস্তারিত আছে।`;
+    }
     async function handleDistributionSubmit(form) {
       if (isSubmitting) return;
       hideDuplicateWarning();
@@ -8433,6 +8514,7 @@
       isSubmitting = true;
       const btn = document.getElementById('distSubmitBtn');
       if (btn) { btn.disabled = true; btn.textContent = 'সংরক্ষণ হচ্ছে...'; }
+      let failStage = 'প্রস্তুতি', failPath = '-', failCtx = { dealerId, seasonId: '', batchId: '' };
       try {
         // Each fertilizer becomes its own distribution record (so every existing
         // report, chart, CSV export and duplicate check — all built around
@@ -8475,8 +8557,10 @@
         // the admin-only Reconcile tool. Phases 1–2 must never be half-applied.
         const batchId = 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
         const createdAt = Date.now();
+        failCtx = { dealerId, seasonId: season ? season.id : '', batchId };
 
         // ---- Phase 1: reserve stock for every item, in ONE transaction ----
+        failStage = 'স্টক সংরক্ষণ (transaction)'; failPath = `dealerStock/${dealerId}`;
         const { committed: reserveCommitted, shortfall, before } = await reserveDealerStock(dealerId, items);
         if (!reserveCommitted) {
           if (shortfall) {
@@ -8485,8 +8569,7 @@
           } else {
             // committed=false with no shortfall means a genuine failure
             // (permission-denied/network), not a business-rule abort.
-            showToast('স্টক আপডেট করা যায়নি — কিছুই সংরক্ষণ হয়নি। নেটওয়ার্ক বা Firebase Rules চেক করুন।', 'error');
-            writeSystemLog('error', 'stock_reserve_failed', `কৃষক: ${farmerLogLabel(data.farmerName, data.nid)} | ডিলার UID: ${dealerId}`);
+            showToast(await logDistFailure(failStage, failPath, { code: 'not-committed' }, failCtx), 'error');
           }
           if (btn) { btn.disabled = false; btn.textContent = 'সংরক্ষণ করুন'; }
           return;
@@ -8495,12 +8578,13 @@
         // ---- Phase 1b (V10): season land + balance, in ONE transaction on the farmer's ledger ----
         let ledgerUndo = null;
         if (season) {
+          failStage = 'সিজন-ব্যালেন্স (transaction)'; failPath = `seasonLedger/${season.id}/<কৃষক>`;
           const lref = ref(db, `seasonLedger/${season.id}/${kNid(cNid)}`);
           let lerr = null, created = false, tx = null;
           const req = { total: landBigha, crop: cropNames[0], ck: seasonCk, cropLand: cropLandBigha, items, rates: seasonRates, cap: maxAllocBigha(), now: createdAt };
           try {
             tx = await runStockTransactionWithCacheWarmup(lref, cur => { const r = seasonLedgerApply(cur, req); if (r.error) { lerr = r.error; return; } lerr = null; created = r.created; return r.node; });
-          } catch (e) { lerr = 'সিজন-ব্যালেন্স আপডেট করা যায়নি: ' + ((e && (e.message || e.code)) || ''); }
+          } catch (e) { lerr = 'সিজন-ব্যালেন্স আপডেট করা যায়নি: ' + ((e && (e.message || e.code)) || ''); await logDistFailure(failStage, failPath, e, failCtx); }
           if (!tx || !tx.committed) {
             await restoreDealerStock(dealerId, items);
             showToast((lerr || 'সিজন-ব্যালেন্স আপডেট করা যায়নি') + ' — কিছুই সংরক্ষণ হয়নি, স্টক ফেরত দেওয়া হয়েছে।', 'error');
@@ -8512,6 +8596,7 @@
         }
 
         // ---- Phase 2: one atomic multi-location write ----
+        failStage = 'রেকর্ড ও সূচক লেখা'; failPath = 'distributions + stockHistory + সূচক';
         // Record/history keys are pre-generated with push(...).key (no data
         // written yet) purely to get unique IDs to address inside the single
         // update object below — dbPush is NOT used here because each call to it
@@ -8539,7 +8624,31 @@
         // Farmer identity mapping — already validated above for this submission —
         // rides in the SAME atomic write so it can never land while the records
         // it's supposed to correspond to don't (or vice versa).
-        multiUpdate[`mobileIndex/${kMob(cMobile)}`] = piiEncodeFields({ nid: cNid, farmerName: data.farmerName });
+        // V12.4: nidIndex / mobileIndex / khatianDagIndex Rules require an existing farmer's
+        // registered values to stay byte-identical (anti-tamper). Read the RAW stored entries
+        // (not decrypted) and write those exact values back, so a returning farmer is never
+        // blocked with permission_denied just because the dealer typed the village / mouza /
+        // dag / khatian a little differently. The distribution record itself keeps what was typed.
+        const rawOf = path => get(ref(db, path)).then(x => (x.exists() ? x.val() : null)).catch(() => null);
+        const [nidRaw, mobRaw, landRaw] = await Promise.all([
+          rawOf(`nidIndex/${kNid(cNid)}`), rawOf(`mobileIndex/${kMob(cMobile)}`),
+          landKeyForThisSubmit ? rawOf(`khatianDagIndex/${landKeyForThisSubmit}`) : Promise.resolve(null),
+        ]);
+        const keepRegistered = (enc, raw, keys) => {
+          if (!raw || typeof raw !== 'object') return enc;
+          keys.forEach(k => { const v = raw[k]; if (v !== undefined && v !== null && v !== '') enc[k] = v; });
+          if (keys.includes('farmerName') && raw.farmerName) { if (raw.nameH) enc.nameH = raw.nameH; else delete enc.nameH; }
+          return enc;
+        };
+        const regDiffs = [];
+        if (nidEntryFresh) {
+          [['village', 'গ্রাম'], ['mouza', 'মৌজা'], ['dagNumber', 'দাগ'], ['khatianNumber', 'খতিয়ান']].forEach(([k, l]) => {
+            const reg = String(nidEntryFresh[k] === undefined || nidEntryFresh[k] === null ? '' : nidEntryFresh[k]).trim();
+            if (reg && reg !== String(data[k] || '').trim()) regDiffs.push(`${l}: ${reg}`);
+          });
+          if (nidEntryFresh.farmerName && normalizeNameForCompare(nidEntryFresh.farmerName) !== normalizeNameForCompare(data.farmerName)) regDiffs.push(`নাম: ${nidEntryFresh.farmerName}`);
+        }
+        multiUpdate[`mobileIndex/${kMob(cMobile)}`] = keepRegistered(piiEncodeFields({ nid: cNid, farmerName: data.farmerName }), mobRaw, ['nid']);
         // lastDistributionDate/lastDistributionAt ride in this SAME atomic write
         // as the distribution records themselves (see multiUpdate below) — the
         // cooldown gate above can therefore never see a lastDistributionDate
@@ -8551,17 +8660,18 @@
         // backfilled the next time that farmer receives a distribution; no
         // migration needed, and old entries missing them just don't autofill the
         // land section until then, exactly as before this change.
-        multiUpdate[`nidIndex/${kNid(cNid)}`] = piiEncodeFields({
+        multiUpdate[`nidIndex/${kNid(cNid)}`] = keepRegistered(piiEncodeFields({
           mobile: cMobile, farmerName: data.farmerName, lastDistributionDate: data.date, lastDistributionAt: createdAt,
           village: data.village || '', landArea: regLandArea, landBigha: data.landBigha, mouza: data.mouza || '', dagNumber: data.dagNumber || '', khatianNumber: data.khatianNumber || '',
-        });
-        if (landKeyForThisSubmit) multiUpdate[`khatianDagIndex/${landKeyForThisSubmit}`] = piiEncodeFields({ nid: cNid, farmerName: data.farmerName });
+        }), nidRaw, ['mobile', 'farmerName', 'village', 'landArea', 'mouza', 'dagNumber', 'khatianNumber']);
+        if (landKeyForThisSubmit) multiUpdate[`khatianDagIndex/${landKeyForThisSubmit}`] = keepRegistered(piiEncodeFields({ nid: cNid, farmerName: data.farmerName }), landRaw, ['nid']);
 
         // Dashboard counters ride in the SAME atomic write (see statsDeltaPaths).
         let statsPaths = {};
         try { statsPaths = { ...statsDeltaPaths(newRecords, 1), ...(await farmerStatsPaths(kNid(cNid), dealerId, data.landArea)) }; }
         catch (e) { statsPaths = statsDeltaPaths(newRecords, 1); }
         let statsProblem = '';
+        let refusedPaths = [];
         try {
           await update(ref(db), { ...multiUpdate, ...statsPaths });
         } catch (e) {
@@ -8575,6 +8685,11 @@
             if (saved) {
               statsProblem = firstErr;
               writeSystemLog('error', 'stats_update_failed', `ব্যাচ ${batchId} | রেকর্ড সংরক্ষিত, কাউন্টার লেখা যায়নি: ${firstErr}`);
+            } else {
+              // V12.6: still all-or-nothing (records + stockHistory + identity indexes are never
+              // split). Diagnose WITHOUT writing: re-check, read-only, the exact Rules conditions
+              // of every path in the refused write, so the log names the path and the field.
+              refusedPaths = diagnoseCommitRefusal(multiUpdate, { nidRaw, mobRaw, landRaw, dealerId });
             }
           }
           if (!saved) {
@@ -8583,13 +8698,14 @@
             await restoreDealerStock(dealerId, items);
             if (ledgerUndo) { try { await ledgerUndo(); } catch (ue) { writeSystemLog('error', 'season_ledger_undo_failed', `${farmerLogLabel('', cNid)}: ${(ue && ue.message) || ''}`); } }
             showToast(`সংরক্ষণ করা যায়নি — কিছুই সংরক্ষণ হয়নি (স্টক ফেরত দেওয়া হয়েছে)। কারণ: ${firstErr}`, 'error');
-            writeSystemLog('error', 'distribution_create_failed', `${firstErr} | ডিলার ${dealerId}`);
+            await logDistFailure(failStage, `প্রত্যাখ্যাত: ${[...new Set(refusedPaths || [])].join(', ') || 'অজানা'}`, e, failCtx);
             console.error('[FDMS] distribution write failed', e);
             if (btn) { btn.disabled = false; btn.textContent = 'সংরক্ষণ করুন'; }
             return;
           }
         }
 
+        if (regDiffs.length) showToast(`বিতরণ সংরক্ষিত। কৃষকের নিবন্ধিত তথ্য বদলায়নি — ${regDiffs.join(' · ')}। ভুল হলে উপজেলা কৃষি অফিসে জানান।`, 'warn');
         // V11: public verification projection — best-effort, after the commit, never blocks the dealer.
         publicSyncSafe({ nid: cNid, mobile: cMobile, seasonIds: season ? [season.id] : [], add: newRecords });
 
@@ -8631,12 +8747,11 @@
         // turn that into a "failed" message.
         try { await refreshDashboardSnapshot({ totalsOnly: true }); } catch (e) { /* display refresh only */ }
         showToast(`সফলভাবে সংরক্ষণ করা হয়েছে (${items.length} টি সার)`, 'success');
-        if (statsProblem) showToast('বিতরণ সংরক্ষিত হয়েছে, কিন্তু ড্যাশবোর্ড পরিসংখ্যান আপডেট হয়নি — অ্যাডমিনকে "পরিসংখ্যান যাচাই" (Reconcile) চালাতে বলুন।', 'warn');
+        if (statsProblem && statsProblem.startsWith('Rules অনুমতি দেয়নি')) showToast(`বিতরণ সংরক্ষিত হয়েছে। ${statsProblem} — Main Admin-কে জানান (সিস্টেম লগে বিস্তারিত)।`, 'warn');
+        else if (statsProblem) showToast('বিতরণ সংরক্ষিত হয়েছে, কিন্তু ড্যাশবোর্ড পরিসংখ্যান আপডেট হয়নি — অ্যাডমিনকে "পরিসংখ্যান যাচাই" (Reconcile) চালাতে বলুন।', 'warn');
         writeSystemLog('data_entry', 'distribution_created', `কৃষক: ${farmerLogLabel(data.farmerName, data.nid)} | ব্যাচ ${batchId} | ${newRecords.length} টি সার (${newRecords.map(i => `${i.fertilizer} ${i.quantity}কেজি`).join(', ')})`);
       } catch (e) {
-        showToast('সংরক্ষণ করা যায়নি: ' + ((e && (e.message || e.code)) || 'নেটওয়ার্ক বা Firebase Rules চেক করুন'), 'error');
-        writeSystemLog('error', 'distribution_create_failed', (e && e.message) || 'unknown');
-        console.error('[FDMS] distribution submit failed', e);
+        showToast(await logDistFailure(failStage, failPath, e, failCtx), 'error');
       } finally {
         isSubmitting = false;
       }
@@ -9207,7 +9322,7 @@
       let dealerBefore = 0, dealerAfter = 0;
       try {
         const creditResult = await runTransaction(dealerStockRef, (current) => {
-          const cur = normalizeStockRow(current);
+          const cur = normalizeStockRow(healStockRow(current));
           dealerBefore = cur.available;
           dealerAfter = cur.available + quantity;
           return { received: cur.received + quantity, distributed: cur.distributed, available: dealerAfter };
@@ -9399,7 +9514,7 @@
       let before = 0, after = 0, shortfall = null;
       const tx = await runStockTransactionWithCacheWarmup(stockRef, (current) => {
         shortfall = null;
-        const node = Object.assign({}, current || {});
+        const node = healStockNode(Object.assign({}, current || {}));
         const row = normalizeStockRow(node[fertilizer]);
         if (delta < 0 && -delta > row.available + 1e-9) { shortfall = row.available; return undefined; }
         before = row.available; after = row.available + delta;
