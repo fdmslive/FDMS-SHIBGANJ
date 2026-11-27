@@ -2,13 +2,14 @@
 <html lang="bn">
 
 <head>
+  <!-- FDMS Shibganj V12.0 (2026-11-27): উপজেলা কৃষি অফিসার কৃষিবিদ মো: নয়ন মিয়া; Excel টেবিল অনুযায়ী ১৮ ফসলের প্রতি-বিঘা বরাদ্দ; বরাদ্দযোগ্য জমির সীমা (ডিফল্ট ৫ বিঘা); ড্যাশবোর্ডে NID/মোবাইল দিয়ে যোগ্যতা যাচাই; UI unslop পাস। -->
   <!-- FDMS Shibganj V11.0 (2026-11-25): Dewanganj live-camera NID scan, public farmer verification (publicFarmers/publicSelfReports), কৃষিবিদ title. -->
   <!-- FDMS Shibganj V10.0 (2026-11-24): bigha land + season balance, NID OCR, farmer-card page-wise records & membership check, encrypted farmer PII. Based on: FDMS Shibganj — full copy of FDMS Bakshiganj V 8.3 (index 52): public govt-portal homepage (login flow unchanged; 4 aggregate reads only) -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <meta name="description"
     content="শিবগঞ্জ উপজেলা, চাঁপাইনবাবগঞ্জ — স্বচ্ছ, ডিজিটাল ও কৃষকবান্ধব সার বিতরণ ব্যবস্থাপনা সিস্টেম (FDMS)">
-  <meta name="theme-color" content="#087443">
+  <meta name="theme-color" content="#FFFFFF">
   <title>উপজেলা সার বিতরণ ব্যবস্থাপনা সিস্টেম</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap"
@@ -3409,6 +3410,182 @@
     .nid-scan-actions .btn{flex:1 1 120px;}
     .nid-cand-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
   </style>
+  <style id="fdms-v12-ui">
+    /* ===== V12 UI layer (unslop pass) =====
+       Direction — product: শিবগঞ্জের সার বিতরণ খতিয়ান, কর্মকর্তা ও ডিলারদের জন্য।
+       Character: exact, official, steady. World: সরকারি রেজিস্টার খাতা, সবুজ ফাইল কভার।
+       Moment: যোগ্যতা যাচাইয়ের বরাদ্দ টেবিল ও চার্ট। Signature: স্ট্যাম্পের মতো বর্গাকার স্ট্যাটাস-বিন্দু।
+       Quiet neutral ramp, one government green accent, no hue gradients/glows/glass. */
+    :root {
+      --primary: #0B6E3F;
+      --primary-dark: #08552F;
+      --secondary: #0B6E3F;
+      --secondary-light: #9DB8A6;
+      --gold: #8A6A1C;
+      --bg: #F6F7F6;
+      --surface: #FFFFFF;
+      --raised: #F0F2F0;
+      --danger: #C2362F;
+      --danger-bg: #FBEDEC;
+      --text-dark: #17201A;
+      --text-2: #4A564D;
+      --text-muted: #687269;
+      --hair: rgba(23, 32, 26, 0.08);
+      --border: rgba(23, 32, 26, 0.10);
+      --glass: #FFFFFF;
+      --radius: 14px;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    body { background: var(--bg); }
+    #mainApp h1, #mainApp h2, #mainApp h3, #mainApp h4, .modal-box h3 { font-weight: 600; letter-spacing: 0; }
+    .glass-card { background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none; border: 1px solid var(--hair); box-shadow: var(--shadow); padding: 20px; }
+
+    /* buttons */
+    .btn { font-weight: 500; border-radius: 8px; transition: background-color .15s var(--ease), border-color .15s var(--ease), color .15s var(--ease), transform .12s var(--ease); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--primary); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12); }
+    .btn-primary:hover { background: var(--primary-dark); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12); }
+    .btn-outline { background: var(--surface); color: var(--text-dark); border: 1px solid var(--border); }
+    .btn-outline:hover { background: var(--raised); }
+    .btn-danger { background: var(--danger); }
+    .btn-sm { padding: 6px 12px; font-size: 13px; border-radius: 8px; }
+    .btn:focus-visible, .nav-item:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+    /* fields */
+    #mainApp input:not([type=checkbox]):not([type=radio]), #mainApp select, #mainApp textarea, .modal-box input:not([type=checkbox]):not([type=radio]), .modal-box select, .modal-box textarea, #loginScreen input { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(11, 110, 63, 0.10); }
+    input[readonly], select:disabled { background: var(--raised); }
+    label { font-weight: 500; color: var(--text-2); }
+
+    /* badges & status */
+    .badge { border-radius: 6px; font-weight: 500; padding: 2px 8px; }
+    .badge-green { background: rgba(11, 110, 63, 0.08); color: var(--primary-dark); }
+    .badge-gold { background: rgba(138, 106, 28, 0.10); color: #6F5516; }
+    .farmer-status { border: 1px solid var(--hair); border-radius: 10px; background: var(--surface); }
+    .farmer-status.ok { border-color: rgba(11, 110, 63, 0.22); background: rgba(11, 110, 63, 0.04); }
+    .farmer-status.new { border-color: rgba(138, 106, 28, 0.25); background: rgba(138, 106, 28, 0.05); }
+    .farmer-status .fs-title { font-weight: 600; }
+    .db-error { border-radius: 12px; }
+
+    /* shell: quiet header, same white as the public portal */
+    #topHeader { background: var(--surface); color: var(--text-dark); border-bottom: 1px solid var(--hair); box-shadow: none; padding: 0 20px; height: 60px; }
+    #topHeader .brand svg { color: var(--primary); }
+    #topHeader .brand-text h1 { font-weight: 600; font-size: 15px; }
+    #topHeader .brand-text p { color: var(--text-muted); opacity: 1; font-size: 12px; }
+    #hamburgerBtn, #logoutBtn { background: var(--surface); color: var(--text-2); border: 1px solid var(--hair); }
+    #logoutBtn:hover, #hamburgerBtn:hover { background: var(--raised); }
+    .user-pill { background: transparent; color: var(--text-2); border-radius: 8px; padding: 6px 4px; font-size: 13px; }
+    .user-pill span.role { background: var(--raised); color: var(--text-2); border: 1px solid var(--hair); border-radius: 6px; font-weight: 500; font-size: 11.5px; }
+
+    #sidebar { width: 256px; background: var(--surface); border-right: 1px solid var(--hair); padding: 16px 12px; }
+    .nav-item { height: 36px; padding: 0 12px; gap: 10px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--text-2); margin-bottom: 2px; transition: background-color .15s var(--ease), color .15s var(--ease); }
+    .nav-item svg { width: 18px; height: 18px; color: var(--text-muted); }
+    .nav-item:hover { background: var(--raised); color: var(--text-dark); }
+    .nav-item.active { background: var(--raised); color: var(--text-dark); box-shadow: inset 2px 0 0 var(--primary); }
+    .nav-item.active svg { color: var(--primary); }
+    @media (min-width: 880px) { #mainContent { padding: 28px 32px 64px; max-width: 1560px; } }
+    .page-header { margin-bottom: 20px; }
+    .page-header h2 { font-size: 24px; font-weight: 500; }
+    .muted { color: var(--text-muted); }
+
+    /* stats: numbers, not icon tiles */
+    .stat-grid { gap: 12px; margin-bottom: 24px; }
+    .stat-card { padding: 16px 20px; }
+    .stat-card .stat-icon { display: none; }
+    .stat-card { display: flex; flex-direction: column; }
+    .stat-card .stat-val { font-size: 28px; font-weight: 500; font-variant-numeric: tabular-nums; order: 2; }
+    .stat-card .stat-label { font-size: 13px; color: var(--text-muted); margin: 0 0 8px; order: 1; }
+
+    /* charts & tables */
+    .chart-card h3, .glass-card > h3 { font-size: 15px; font-weight: 600; }
+    .chart-canvas-wrap { height: 260px; }
+    .chart-card.wide .chart-canvas-wrap { height: 300px; }
+    table.data-table th { background: var(--raised); color: var(--text-2); font-weight: 500; font-size: 12.5px; border-bottom: 1px solid var(--hair); }
+    table.data-table td { border-bottom: 1px solid var(--hair); font-variant-numeric: tabular-nums; }
+    table.data-table tr:hover td { background: #FAFBFA; }
+    .mini-table th { color: var(--text-2); font-weight: 500; }
+    .rank-pill { background: var(--raised) !important; color: var(--text-2) !important; box-shadow: none !important; font-weight: 500; }
+
+    /* login */
+    #loginScreen { background: var(--bg); }
+    .login-badge { background: var(--primary); box-shadow: none; border-radius: 12px; }
+    .login-title { font-weight: 600; }
+    .login-tab.active { background: var(--surface); color: var(--text-dark); box-shadow: inset 0 -2px 0 var(--primary); }
+
+    /* toasts & modal */
+    .toast { border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); }
+    .modal-box { border-radius: 16px; border: 1px solid var(--hair); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); }
+
+    /* ===== V12: কৃষকের যোগ্যতা যাচাই ===== */
+    .elig-card { margin-bottom: 24px; padding: 24px; }
+    .elig-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+    .elig-top h3 { font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+    .elig-search { display: flex; gap: 8px; flex: 1; max-width: 480px; min-width: 260px; margin: 0; }
+    .elig-search input { flex: 1; height: 40px; padding: 0 12px; font-size: 15px; font-variant-numeric: tabular-nums; }
+    .elig-search .btn { height: 40px; padding: 0 16px; }
+    .elig-note { font-size: 13px; color: var(--text-muted); margin: 8px 0; line-height: 1.6; }
+    .elig-msg { padding: 12px 16px; border: 1px solid var(--hair); border-radius: 10px; background: var(--raised); font-size: 14px; }
+    .elig-person { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; padding: 16px 0 12px; border-top: 1px solid var(--hair); }
+    .elig-name { font-size: 18px; font-weight: 600; }
+    .elig-meta { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+    .mono { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 0.92em; font-variant-numeric: tabular-nums; }
+    .elig-verdict { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--hair); background: var(--raised); font-size: 13.5px; font-weight: 500; white-space: nowrap; }
+    .elig-verdict i { width: 8px; height: 8px; border-radius: 2px; background: var(--text-muted); }
+    .elig-verdict.ok { color: var(--primary-dark); background: rgba(11, 110, 63, 0.06); border-color: rgba(11, 110, 63, 0.20); }
+    .elig-verdict.ok i { background: var(--primary); }
+    .elig-verdict.neg { color: var(--danger); background: var(--danger-bg); border-color: rgba(194, 54, 47, 0.20); }
+    .elig-verdict.neg i { background: var(--danger); }
+    .elig-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 4px 0 0; border: 1px solid var(--hair); border-radius: 12px; overflow: hidden; }
+    .elig-facts > div { padding: 12px 16px; border-left: 1px solid var(--hair); }
+    .elig-facts > div:first-child { border-left: 0; }
+    .elig-facts dt { font-size: 12.5px; color: var(--text-muted); }
+    .elig-facts dd { margin: 4px 0 0; font-size: 24px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.2; }
+    .elig-facts dd small { display: block; font-size: 12px; color: var(--text-muted); font-weight: 400; margin-top: 2px; }
+    .elig-pos { color: var(--primary); }
+    .elig-neg { color: var(--danger); }
+    .elig-card .farmer-status { margin: 12px 0 0; }
+    .elig-sub { font-size: 13px; font-weight: 600; color: var(--text-2); margin: 20px 0 8px; }
+    .elig-crops { list-style: none; margin: 0; padding: 0; border: 1px solid var(--hair); border-radius: 10px; }
+    .elig-crops li { display: grid; grid-template-columns: 120px 80px 1fr; gap: 12px; padding: 8px 12px; font-size: 13.5px; border-top: 1px solid var(--hair); align-items: baseline; }
+    .elig-crops li:first-child { border-top: 0; }
+    .elig-crops li > span:last-child { color: var(--text-2); }
+    .elig-calc-head { display: grid; grid-template-columns: minmax(160px, 240px) 140px 1fr; gap: 12px; align-items: end; margin-bottom: 12px; }
+    .elig-field { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+    .elig-field span { font-size: 12.5px; color: var(--text-muted); font-weight: 500; }
+    .elig-field select, .elig-field input { height: 40px; padding: 0 12px; font-size: 14.5px; }
+    .elig-calc-head .elig-note { margin: 0 0 10px; }
+    table.elig-table { min-width: 520px; }
+    table.elig-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+    table.elig-table td b { font-weight: 600; }
+    .elig-link { background: none; border: 0; padding: 0; color: var(--primary); text-decoration: underline; text-underline-offset: 2px; font-weight: 400; cursor: pointer; }
+    @media (max-width: 720px) {
+      .elig-card { padding: 16px; }
+      .elig-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .elig-facts > div:nth-child(3) { border-left: 0; }
+      .elig-facts > div:nth-child(n+3) { border-top: 1px solid var(--hair); }
+      .elig-facts dd { font-size: 20px; }
+      .elig-calc-head { grid-template-columns: 1fr 1fr; }
+      .elig-calc-head .elig-note { grid-column: 1 / -1; }
+      .elig-crops li { grid-template-columns: 1fr auto; }
+      .elig-crops li > span:last-child { grid-column: 1 / -1; }
+      .elig-search { max-width: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { .btn, .nav-item { transition: none; } }
+
+    /* homepage polish: one accent, no rainbow tiles */
+    #homeScreen .c-green, #homeScreen .c-blue, #homeScreen .c-orange, #homeScreen .c-purple { background: #EEF3EF; color: #0B6E3F; }
+    #homeScreen .q-green, #homeScreen .q-blue, #homeScreen .q-orange, #homeScreen .q-purple { background: #FFFFFF; border-color: rgba(23, 32, 26, 0.08); }
+    #homeScreen .hp-q h3 { color: #17201A !important; font-weight: 600; }
+    #homeScreen .hp-q .hp-q-ic { color: #0B6E3F !important; background: #EEF3EF; box-shadow: none; }
+    #homeScreen .hp-q .hp-q-arrow { background: #EEF3EF !important; color: #0B6E3F; }
+    #homeScreen .hp-q { transition: border-color .15s var(--ease), background-color .15s var(--ease); }
+    #homeScreen .hp-q:hover { transform: none; box-shadow: none; border-color: rgba(11, 110, 63, 0.35); }
+    #homeScreen .hp-q:hover .hp-q-arrow { transform: translateX(2px); }
+    #homeScreen .hp-stat b { font-weight: 600; }
+    #homeScreen .hp-footer::before { background: #0B6E3F; }
+    #homeScreen .hp-tw-bar { background: #9BE07A; }
+  </style>
 </head>
 
 <body>
@@ -3520,7 +3697,7 @@
       <div class="hp-head hp-head-plain"><h2 id="hpTeamT" data-i18n="t_title">সম্পৃক্ত কর্মকর্তাবৃন্দ ও Developer</h2></div>
       <div class="hp-team">
         <article class="hp-person"><img src="data:image/jpeg;base64,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" alt="মাজহারুল ইসলাম — উপজেলা নির্বাহী অফিসার, শিবগঞ্জ" width="92" height="92" loading="lazy" decoding="async"><div><p class="t" data-i18n="p1_t">উপজেলা নির্বাহী অফিসার (UNO)</p><p class="n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-6h6v6M8.5 11h.01M12 11h.01M15.5 11h.01"/></svg><b data-i18n="p1_n">মাজহারুল ইসলাম</b></p><p class="l" data-i18n="p1_l">শিবগঞ্জ উপজেলা, চাঁপাইনবাবগঞ্জ</p><span class="cr" data-i18n="p1_c">প্রধান প্রশাসন</span></div></article>
-        <article class="hp-person"><img src="data:image/jpeg;base64,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" alt="কৃষিবিদ মো: আব্দুন নূর — অতিরিক্ত কৃষি অফিসার, শিবগঞ্জ" width="92" height="92" loading="lazy" decoding="async"><div><p class="t" data-i18n="p2_t">অতিরিক্ত কৃষি অফিসার</p><p class="n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-9 6-14 15-14 0 9-5 15-14 15M5 19l7-7"/></svg><b data-i18n="p2_n">কৃষিবিদ মো: আব্দুন নূর</b></p><p class="l" data-i18n="p2_l">উপজেলা কৃষি অফিস, শিবগঞ্জ</p><span class="cr" data-i18n="p2_c">উপজেলা কৃষি অফিস</span></div></article>
+        <article class="hp-person"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5MiA5MiI+PHJlY3Qgd2lkdGg9IjkyIiBoZWlnaHQ9IjkyIiBmaWxsPSIjRTdFQ0U4Ii8+PGNpcmNsZSBjeD0iNDYiIGN5PSIzNiIgcj0iMTUiIGZpbGw9IiM5QUE4OUYiLz48cGF0aCBkPSJNMTggODRjMy0xNiAxNC0yNSAyOC0yNXMyNSA5IDI4IDI1eiIgZmlsbD0iIzlBQTg5RiIvPjwvc3ZnPg==" alt="কৃষিবিদ মো: নয়ন মিয়া — উপজেলা কৃষি অফিসার, শিবগঞ্জ" width="92" height="92" loading="lazy" decoding="async"><div><p class="t" data-i18n="p2_t">উপজেলা কৃষি অফিসার</p><p class="n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-9 6-14 15-14 0 9-5 15-14 15M5 19l7-7"/></svg><b data-i18n="p2_n">কৃষিবিদ মো: নয়ন মিয়া</b></p><p class="l" data-i18n="p2_l">উপজেলা কৃষি অফিস, শিবগঞ্জ</p><span class="cr" data-i18n="p2_c">উপজেলা কৃষি অফিস</span></div></article>
         <article class="hp-person"><img src="data:image/jpeg;base64,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" alt="হৃদয় হাসান রাফি — FDMS সিস্টেম ডেভেলপার" width="92" height="92" loading="lazy" decoding="async"><div><p class="t" data-i18n="p3_t">System Developer</p><p class="n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8l-5 4 5 4M16 8l5 4-5 4M14 5l-4 14"/></svg><b data-i18n="p3_n">হৃদয় হাসান রাফি</b></p><p class="l" data-i18n="p3_l">FDMS System Developer</p><span class="cr" data-i18n="p3_c">ডিজাইন ও ডেভেলপমেন্ট</span></div></article>
       </div>
     </section>
@@ -3535,7 +3712,7 @@
           <p class="hp-cr-sub" data-i18n="cr_sub">ছবিতে ট্যাপ করে প্রত্যেকের তথ্য দেখুন</p>
           <div class="hp-cr-avs">
             <button type="button" class="hp-cr-av active" data-credit="0" aria-pressed="true" aria-label="মাজহারুল ইসলাম"><span class="ph"></span><small data-i18n="cr_av1">ইউএনও</small></button>
-            <button type="button" class="hp-cr-av" data-credit="1" aria-pressed="false" aria-label="কৃষিবিদ মো: আব্দুন নূর"><span class="ph"></span><small data-i18n="cr_av2">কৃষি অফিসার</small></button>
+            <button type="button" class="hp-cr-av" data-credit="1" aria-pressed="false" aria-label="কৃষিবিদ মো: নয়ন মিয়া"><span class="ph"></span><small data-i18n="cr_av2">কৃষি অফিসার</small></button>
             <button type="button" class="hp-cr-av" data-credit="2" aria-pressed="false" aria-label="হৃদয় হাসান রাফি"><span class="ph"></span><small data-i18n="cr_av3">ডেভেলপার</small></button>
           </div>
         </div>
@@ -3548,7 +3725,7 @@
         </div>
         <ul class="hp-sr">
           <li data-i18n="cr1">মাজহারুল ইসলাম — উপজেলা নির্বাহী অফিসার (UNO), শিবগঞ্জ; বিসিএস ৩৬তম ব্যাচ; প্রধান প্রশাসন</li>
-          <li data-i18n="cr2">কৃষিবিদ মো: আব্দুন নূর — অতিরিক্ত কৃষি অফিসার, শিবগঞ্জ; উপজেলা কৃষি অফিস</li>
+          <li data-i18n="cr2">কৃষিবিদ মো: নয়ন মিয়া — উপজেলা কৃষি অফিসার, শিবগঞ্জ; উপজেলা কৃষি অফিস</li>
           <li data-i18n="cr3">হৃদয় হাসান রাফি — অ্যাপস ও ওয়েব ডেভেলপার, FDMS সিস্টেম ডেভেলপার; এসএসসি ২০২৬; ডিজাইন ও ডেভেলপমেন্ট</li>
         </ul>
       </section>
@@ -3669,7 +3846,7 @@
       <nav id="sidebar"></nav>
       <main id="mainContent"></main>
     </div>
-    <div class="app-footer">FDMS V10.0 · © Fertilizer Distribution Management System — All Rights Reserved · Developed by Hridoy
+    <div class="app-footer">FDMS V12.0 · © Fertilizer Distribution Management System — All Rights Reserved · Developed by Hridoy
       Hasan Rafi</div>
   </div>
 
@@ -3795,10 +3972,34 @@
       { v: 'এমওপি', l: 'এমওপি (MOP)' },
       { v: 'জৈব সার', l: 'জৈব সার (Organic)' }
     ];
-    const FERTILIZER_COLORS = ['#2E7D32', '#4CAF50', '#81C784', '#C9A227', '#8D6E63'];
+    const FERTILIZER_COLORS = ['#0B6E3F', '#5F8E6F', '#A9BEB0', '#A8842F', '#8C847A'];
     const SESSION_TIMEOUT_MS = 15 * 60 * 1000;
 
-    const CROPS = ['ভুট্টা', 'মরিচ', 'সরিষা', 'আলু', 'পেয়াজ', 'রসুন', 'বোরো', 'রোপা আমন', 'নিজে লিখুন'];
+    /* V12: ফসলভিত্তিক সার সুপারিশ — উপজেলা কৃষি অফিসের Excel টেবিল (প্রতি বিঘা = ৩৩ শতাংশ, কেজি)।
+       প্রতিটি মান [সর্বনিম্ন, সর্বোচ্চ]; বরাদ্দের সীমা = সর্বোচ্চ মান × ফসলের জমি (বিঘা)।
+       বিতরণযোগ্য সার (FERTILIZERS) বরাদ্দে যায়; জিপসাম/জিংক/বোরন/ম্যাগনেসিয়াম শুধু সুপারিশ হিসেবে দেখানো হয়।
+       অ্যাডমিন সেটিংসে কোনো ফসলের ঘরে আলাদা মান দিলে সেটাই এই টেবিলের ওপরে প্রাধান্য পায়। */
+    const XLSX_RATE_TABLE = [{"crop":"পেঁয়াজ","r":{"জৈব সার":[200,250],"ইউরিয়া":[25,28],"টিএসপি":[30,33],"ডিএপি":[35,37],"এমওপি":[25,27],"জিপসাম":[45,50],"জিংক":[1.5,1.5],"বোরন":[1,1],"ম্যাগনেসিয়াম":[4,5]}},{"crop":"পাট","r":{"জৈব সার":[400,500],"ইউরিয়া":[15,18],"টিএসপি":[8,10],"ডিএপি":[10,12],"এমওপি":[6,7],"জিপসাম":[6,7]}},{"crop":"রসুন","r":{"জৈব সার":[200,250],"ইউরিয়া":[28,30],"টিএসপি":[30,33],"ডিএপি":[35,37],"এমওপি":[30,33],"জিপসাম":[45,50],"জিংক":[1.5,1.5],"বোরন":[1,1],"ম্যাগনেসিয়াম":[5,5]}},{"crop":"গম","r":{"জৈব সার":[250,300],"ইউরিয়া":[30,33],"টিএসপি":[25,28],"ডিএপি":[25,30],"এমওপি":[20,22],"জিপসাম":[20,25],"জিংক":[1.5,1.5],"বোরন":[1.25,1.25],"ম্যাগনেসিয়াম":[5,7]}},{"crop":"ভুট্টা","r":{"জৈব সার":[250,300],"ইউরিয়া":[33,35],"টিএসপি":[30,33],"ডিএপি":[35,37],"এমওপি":[22,25],"জিপসাম":[25,30],"জিংক":[1.5,2],"বোরন":[1,1.25],"ম্যাগনেসিয়াম":[7,10]}},{"crop":"বোরো ধান","r":{"জৈব সার":[250,300],"ইউরিয়া":[30,33],"টিএসপি":[20,22],"ডিএপি":[25,27],"এমওপি":[12,15],"জিপসাম":[12,15],"জিংক":[1,1.75]}},{"crop":"রোপা আমন","r":{"জৈব সার":[250,300],"ইউরিয়া":[28,30],"টিএসপি":[20,22],"ডিএপি":[22,28],"এমওপি":[12,24],"জিপসাম":[12,15],"জিংক":[1.5,1.5]}},{"crop":"আউশ","r":{"জৈব সার":[200,250],"ইউরিয়া":[25,28],"টিএসপি":[18,20],"ডিএপি":[25,29],"এমওপি":[10,12],"জিপসাম":[10,12],"জিংক":[1,1.25]}},{"crop":"মসুর","r":{"জৈব সার":[200,250],"ইউরিয়া":[8,10],"টিএসপি":[6,10],"ডিএপি":[10,12],"এমওপি":[6,8],"জিপসাম":[8,10],"জিংক":[1,1.25],"বোরন":[1,1.25]}},{"crop":"সরিষা","r":{"জৈব সার":[200,250],"ইউরিয়া":[22,25],"টিএসপি":[20,22],"ডিএপি":[18,22],"এমওপি":[20,25],"জিপসাম":[25,30],"জিংক":[1,1.5],"বোরন":[1,1.25],"ম্যাগনেসিয়াম":[5,6]}},{"crop":"কালোজিরা","r":{"জৈব সার":[200,250],"ইউরিয়া":[25,28],"টিএসপি":[16,18],"ডিএপি":[20,22],"এমওপি":[22,30],"জিপসাম":[12,13],"জিংক":[1,1.25],"বোরন":[1,1.25],"ম্যাগনেসিয়াম":[4,5]}},{"crop":"তিল","r":{"জৈব সার":[200,250],"ইউরিয়া":[15,18],"টিএসপি":[14,15],"ডিএপি":[15,20],"এমওপি":[10,12],"জিপসাম":[25,30],"জিংক":[1,1],"বোরন":[1,1],"ম্যাগনেসিয়াম":[4,5]}},{"crop":"চিনাবাদাম","r":{"জৈব সার":[250,300],"ইউরিয়া":[18,20],"টিএসপি":[14,15],"ডিএপি":[18,20],"এমওপি":[20,22],"জিপসাম":[20,25]}},{"crop":"মাসকলাই","r":{"জৈব সার":[200,200],"ইউরিয়া":[10,12],"টিএসপি":[18,24],"ডিএপি":[14,16],"এমওপি":[6,8],"জিপসাম":[8,10],"জিংক":[1,1],"বোরন":[1,1]}},{"crop":"খেসারী","r":{"জৈব সার":[200,300],"ইউরিয়া":[22,25],"টিএসপি":[20,22],"ডিএপি":[22,27],"এমওপি":[22,22],"জিপসাম":[20,22],"জিংক":[2,2],"বোরন":[1,1]}},{"crop":"আঁখ","r":{"জৈব সার":[500,600],"ইউরিয়া":[45,50],"টিএসপি":[33,35],"ডিএপি":[35,37],"এমওপি":[22,25],"জিপসাম":[20,25],"জিংক":[2,2]}},{"crop":"কলা","r":{"জৈব সার":[500,600],"ইউরিয়া":[110,120],"টিএসপি":[90,100],"ডিএপি":[110,120],"এমওপি":[50,60],"জিপসাম":[90,110],"জিংক":[2,3],"বোরন":[3,4],"ম্যাগনেসিয়াম":[1,2]}},{"crop":"সবজি","r":{"জৈব সার":[250,300],"ইউরিয়া":[33,35],"টিএসপি":[22,25],"ডিএপি":[25,27],"এমওপি":[18,20],"জিপসাম":[18,20],"জিংক":[1,1],"বোরন":[1,1],"ম্যাগনেসিয়াম":[4,5]}}];
+    const XLSX_ADVISORY_FERTS = ['জিপসাম', 'জিংক', 'বোরন', 'ম্যাগনেসিয়াম'];
+    // Excel-এর শিরোনামের বানান (যেমন য় দুইভাবে লেখা যায়) FERTILIZERS-এর মানের সাথে হুবহু মিলিয়ে নেওয়া
+    XLSX_RATE_TABLE.forEach(row => {
+      const out = {};
+      Object.keys(row.r).forEach(k => {
+        const n = k.normalize('NFC'), f = FERTILIZERS.find(x => x.v.normalize('NFC') === n), adv = XLSX_ADVISORY_FERTS.find(x => x.normalize('NFC') === n);
+        out[f ? f.v : (adv || k)] = row.r[k];
+      });
+      row.r = out;
+    });
+    function xlsxCropKey(name) { return String(name || '').normalize('NFC').replace(/\u0981/g, '').replace(/\s+/g, ' ').trim().replace(/\s*ধান$/, ''); }
+    const XLSX_ALIASES = { 'পিয়াজ': 'পেয়াজ', 'আমন': 'রোপা আমন', 'আমন ধান': 'রোপা আমন', 'খেসারি': 'খেসারী', 'আখ': 'আখ', 'বাদাম': 'চিনাবাদাম', 'মাষকলাই': 'মাসকলাই' };
+    const XLSX_BY_KEY = {};
+    XLSX_RATE_TABLE.forEach(row => { XLSX_BY_KEY[xlsxCropKey(row.crop)] = row; });
+    function xlsxRowForCrop(crop) {
+      const k = xlsxCropKey(crop); if (!k) return null;
+      return XLSX_BY_KEY[k] || XLSX_BY_KEY[xlsxCropKey(XLSX_ALIASES[k] || '')] || null;
+    }
+    function xlsxRangeText(v) { if (!v) return '—'; return v[0] === v[1] ? kgFmt(v[1]) : `${kgFmt(v[0])}–${kgFmt(v[1])}`; }
+    const CROPS = [...XLSX_RATE_TABLE.map(r => r.crop), 'নিজে লিখুন'];
     const CROP_CUSTOM_VALUE = 'নিজে লিখুন';
     const MAX_CROP_SELECTIONS = 5;
     // ফসল-ভিত্তিক সার লক (crop × fertilizer lock): অ্যাডমিনের "যোগ্যতার মেয়াদ (দিন)"
@@ -3836,7 +4037,7 @@
        সিজনের মধ্যে একটি ফসলে যে জমি দেওয়া হয় তা মোট জমি থেকে বিয়োগ হয় (usedLandBigha)।
        প্রাপ্য = ফসলের জমি × হার; ব্যালেন্স = প্রাপ্য − নেওয়া — কম নিলে বাকিটা পরে নেওয়া যায়।
        ledger বদলায় শুধু Firebase transaction দিয়ে (দুই ডিলার একসাথে দিলেও বেশি দেওয়া অসম্ভব)। */
-    const DEFAULT_LAND_RULES = { dagKhatianThresholdBigha: 6 };
+    const DEFAULT_LAND_RULES = { dagKhatianThresholdBigha: 6, maxAllocBigha: 5 }; // maxAllocBigha: একজন কৃষক এক সিজনে সর্বোচ্চ যত বিঘার জন্য বরাদ্দ পাবেন (০ = সীমা নেই)
     /* LEDGER-PURE-BEGIN */
     function ledR(n) { return Math.round((Number(n) || 0) * 10000) / 10000; }
     // req = { total, crop, ck, cropLand, items:[{fertilizer,quantity}], rates:{সার: কেজি/বিঘা}, now }
@@ -3844,10 +4045,11 @@
       const node = cur ? JSON.parse(JSON.stringify(cur)) : { totalLandBigha: ledR(req.total), usedLandBigha: 0, crops: {} };
       node.crops = node.crops || {};
       const total = Number(node.totalLandBigha) || 0, used = Number(node.usedLandBigha) || 0;
+      const cap = Number(req.cap) || 0, allocTotal = cap > 0 ? Math.min(total, cap) : total;
       let c = node.crops[req.ck], created = false;
       if (!c) {
         if (!(req.cropLand > 0)) return { error: 'এই ফসলে চাষের জমির পরিমাণ (বিঘা) দিন' };
-        if (used + req.cropLand > total + 1e-6) return { error: `ফসলের জমি মোট জমির চেয়ে বেশি — এই সিজনে অবশিষ্ট জমি ${ledR(Math.max(0, total - used))} বিঘা` };
+        if (used + req.cropLand > allocTotal + 1e-6) return { error: allocTotal < total ? `বরাদ্দযোগ্য জমির সীমা ${ledR(cap)} বিঘা — এই সিজনে অবশিষ্ট ${ledR(Math.max(0, allocTotal - used))} বিঘা` : `ফসলের জমি মোট জমির চেয়ে বেশি — এই সিজনে অবশিষ্ট জমি ${ledR(Math.max(0, total - used))} বিঘা` };
         c = { crop: req.crop, landBigha: ledR(req.cropLand), taken: {}, createdAt: req.now || 0 };
         node.crops[req.ck] = c; node.usedLandBigha = ledR(used + req.cropLand); created = true;
       }
@@ -3894,9 +4096,22 @@
     function ratesForCrop(crop) {
       const R = state.fertRates || {}, d = R.default || {}, c = (R.crops || {})[seasonCropKey(crop)] || {};
       const out = {};
-      FERTILIZERS.forEach(f => { const v = c[f.v] !== undefined && c[f.v] !== '' && c[f.v] !== null ? Number(c[f.v]) : Number(d[f.v]); if (v > 0) out[f.v] = v; });
+      const row = xlsxRowForCrop(crop);
+      FERTILIZERS.forEach(f => {
+        let v;
+        if (c[f.v] !== undefined && c[f.v] !== '' && c[f.v] !== null) v = Number(c[f.v]);
+        else if (row && row.r[f.v]) v = Number(row.r[f.v][1]);
+        else v = Number(d[f.v]);
+        if (v > 0) out[f.v] = v;
+      });
       return out;
     }
+    function maxAllocBigha() {
+      const L = state.landRules || {};
+      if (L.maxAllocBigha === undefined || L.maxAllocBigha === null || L.maxAllocBigha === '') return DEFAULT_LAND_RULES.maxAllocBigha;
+      const v = Number(L.maxAllocBigha); return v > 0 ? v : 0;
+    }
+    function allocTotalBigha(total) { const cap = maxAllocBigha(), t = Number(total) || 0; return cap > 0 ? Math.min(t, cap) : t; }
     function dagKhatianThreshold() { const v = Number(state.landRules && state.landRules.dagKhatianThresholdBigha); return v > 0 ? v : DEFAULT_LAND_RULES.dagKhatianThresholdBigha; }
 
     /* ---------------- TWO-LEVEL stock management (rebuilt) ----------------
@@ -6290,6 +6505,7 @@
       <ul style="margin:0 0 0 18px;padding:0;">${statIssues.slice(0, 8).map(i => `<li>${esc(i.label)}: ${i.isKg ? kgFmt(i.actual) : i.actual} বনাম ${i.isKg ? kgFmt(i.expected) : i.expected}</li>`).join('')}</ul></div>`
           : `<p class="stats-ok" style="margin:-8px 0 12px;">✓ কাউন্টার সামঞ্জস্য যাচাই: সব মিলেছে (সকল ডিলারের যোগফল = মোট বিতরণ ও মোট সার)${lastChecked ? ` · সর্বশেষ পূর্ণ যাচাই: ${new Date(lastChecked).toLocaleString('bn-BD')}` : ''}</p>`}
     ${isAdmin && !meta.lastReconciledAt ? `<div class="farmer-status new" style="margin:0 0 14px;"><b>একবার "পরিসংখ্যান যাচাই" চালান</b> — এই ডাটাবেজে এখনো আসল রেকর্ডের সাথে পূর্ণ মিলিয়ে দেখা হয়নি। একবার চালালে ড্যাশবোর্ডের সংখ্যা পুরনো index.html-এর মতো সরাসরি গণনার সাথে হুবহু মিলবে, তারপর থেকে প্রতিটি বিতরণে স্বয়ংক্রিয়ভাবে আপডেট হবে। <button class="btn btn-outline btn-sm" data-action="navigate" data-view="statsReconcile" style="margin-left:6px;">এখনই যাচাই করুন</button></div>` : ''}
+    ${renderEligCard()}
     <div class="stat-grid">
       ${statCard('মোট ডিলার', totalDealers, 'dealers')}
       ${statCard('মোট কৃষক', totalFarmers, 'profile')}
@@ -6398,6 +6614,13 @@
       // render) before touching the freshly-rendered canvas elements.
       Object.values(charts).forEach(c => { try { c && c.destroy(); } catch (e) { /* ignore */ } });
       charts = {};
+      if (window.Chart && !window.__fdmsChartTheme) {
+        window.__fdmsChartTheme = true;
+        Chart.defaults.color = '#687269';
+        Chart.defaults.borderColor = 'rgba(23,32,26,0.06)';
+        Chart.defaults.font.family = "'Hind Siliguri', sans-serif";
+        Chart.defaults.font.size = 12;
+      }
 
       const CHART_IDS = ['chartFertilizer', 'chartUnion', 'chartMonthly'];
       const thisRenderView = currentView;
@@ -6429,11 +6652,11 @@
       } catch (e) { showChartMessage('chartFertilizer', 'চার্ট তৈরি করা যায়নি।', true, true); }
       try {
         const ctx2 = document.getElementById('chartUnion');
-        if (ctx2) charts.uni = new Chart(ctx2, { type: 'bar', data: { labels: UNIONS.map(u => u.split(' ')[0]), datasets: [{ label: 'কেজি', data: UNIONS.map(u => unionTotals[u]), backgroundColor: '#4CAF50', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+        if (ctx2) charts.uni = new Chart(ctx2, { type: 'bar', data: { labels: UNIONS.map(u => u.split(' ')[0]), datasets: [{ label: 'কেজি', data: UNIONS.map(u => unionTotals[u]), backgroundColor: '#0B6E3F', borderRadius: 3, maxBarThickness: 28 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
       } catch (e) { showChartMessage('chartUnion', 'চার্ট তৈরি করা যায়নি।', true, true); }
       try {
         const ctx3 = document.getElementById('chartMonthly');
-        if (ctx3) charts.month = new Chart(ctx3, { type: 'line', data: { labels: monthKeys, datasets: [{ label: 'মোট সার (কেজি)', data: monthKeys.map(k => monthlyMap[k]), borderColor: '#2E7D32', backgroundColor: 'rgba(46,125,50,0.15)', fill: true, tension: 0.35 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+        if (ctx3) charts.month = new Chart(ctx3, { type: 'line', data: { labels: monthKeys, datasets: [{ label: 'মোট সার (কেজি)', data: monthKeys.map(k => monthlyMap[k]), borderColor: '#0B6E3F', backgroundColor: 'rgba(11,110,63,0.06)', fill: true, tension: 0.35, borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#0B6E3F' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
       } catch (e) { showChartMessage('chartMonthly', 'চার্ট তৈরি করা যায়নি।', true, true); }
     }
 
@@ -6941,7 +7164,7 @@
           <div class="field"><label>কৃষকের নাম</label><input type="text" name="farmerName" id="distFarmerNameInput" required></div>
           <div class="field"><label>এনআইডি নম্বর</label>
             <div class="fc-row" style="flex-wrap:nowrap;"><input type="text" name="nid" id="distNidInput" inputmode="numeric" pattern="[0-9]{10,17}" required style="min-width:0;">
-            <button type="button" class="btn btn-outline btn-sm" data-action="ocr-nid" data-target="distNidInput" title="NID কার্ডের ছবি তুলে নম্বর বসান">📷 স্ক্যান</button></div>
+            <button type="button" class="btn btn-outline btn-sm" data-action="ocr-nid" data-target="distNidInput" title="NID কার্ডের ছবি তুলে নম্বর বসান"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg> স্ক্যান</button></div>
             <div id="nidCapturePreview" class="nid-capture-preview" style="display:none;"></div></div>
         </div>
         <div id="nidAutofillNote" style="display:none;"></div>
@@ -7251,7 +7474,7 @@
           opt.disabled = !!t;
           if (t) {
             const next = latestNextDate(t);
-            opt.textContent = `${base} — 🔒 ${t.map(lockCropLabel).join(', ')}${next ? ' · ' + ddmmyyyy(next) + ' থেকে' : ''}`;
+            opt.textContent = `${base} — লক: ${t.map(lockCropLabel).join(', ')}${next ? ' · ' + ddmmyyyy(next) + ' থেকে' : ''}`;
           } else opt.textContent = base;
         });
         if (sel.value && locked[sel.value]) { cleared.push(sel.value); sel.value = ''; }
@@ -7277,7 +7500,7 @@
                 : `<div>নির্বাচিত ফসলের (${esc(cropNames.join(', '))}) জন্য লক: <b>${effKeys.map(k => esc(fertilizerLabel(k))).join(', ')}</b> — বাকি সার এখনই দেওয়া যাবে।</div>`)
               : `<div style="color:var(--primary-dark);font-weight:600;">নির্বাচিত ফসলের (${esc(cropNames.join(', '))}) জন্য কোনো সার লক নেই — সব সার দেওয়া যাবে।</div>`;
           note.style.display = 'block';
-          note.innerHTML = `<div class="farmer-status ${all ? 'blocked' : 'ok'}"><div class="fs-title">🔒 এই কৃষকের ফসল-ভিত্তিক সার লক:</div>${cropKeys.map(k => `<div><b>${esc(byCrop[k].label)}</b>: ${byCrop[k].items.map(it => `${esc(fertilizerLabel(it.f))} (সর্বশেষ ${ddmmyyyy(it.date)}${it.dealerName ? `, ${esc(it.dealerName)}` : ''} · আবার: <b>${it.nextDate ? ddmmyyyy(it.nextDate) : '-'}</b>)`).join(', ')}</div>`).join('')}${footer}</div>`;
+          note.innerHTML = `<div class="farmer-status ${all ? 'blocked' : 'ok'}"><div class="fs-title"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> এই কৃষকের ফসল-ভিত্তিক সার লক:</div>${cropKeys.map(k => `<div><b>${esc(byCrop[k].label)}</b>: ${byCrop[k].items.map(it => `${esc(fertilizerLabel(it.f))} (সর্বশেষ ${ddmmyyyy(it.date)}${it.dealerName ? `, ${esc(it.dealerName)}` : ''} · আবার: <b>${it.nextDate ? ddmmyyyy(it.nextDate) : '-'}</b>)`).join(', ')}</div>`).join('')}${footer}</div>`;
         }
       }
       if (cleared.length) showToast(`${cleared.map(fertilizerLabel).join(', ')} — নির্বাচিত ফসলের জন্য এই কৃষকের এখন লক, তাই নির্বাচন সরানো হয়েছে`, 'warn');
@@ -7413,13 +7636,17 @@
       }
       const L = distLedgerCtx && distLedgerCtx.node;
       const total = L ? Number(L.totalLandBigha) || 0 : (parseFloat(normalizeBanglaDigits(form.landBigha && form.landBigha.value)) || 0);
-      const used = L ? Number(L.usedLandBigha) || 0 : 0, remain = ledR(Math.max(0, total - used));
+      const used = L ? Number(L.usedLandBigha) || 0 : 0, allocT = allocTotalBigha(total), remain = ledR(Math.max(0, allocT - used));
       const crop = distSelectedCrop(form), ck = crop ? seasonCropKey(crop) : '';
       const reg = L && L.crops && ck ? L.crops[ck] : null;
       let html = `<div class="farmer-status ok"><div class="fs-title">সিজন: ${esc(season.name || season.id)} <span class="muted" style="font-weight:500;">(${ddmmyyyy(season.startDate)} – ${ddmmyyyy(season.endDate)})</span></div>`;
       if (distLedgerCtx && distLedgerCtx.loading) html += '<div>কৃষকের সিজন-ব্যালেন্স লোড হচ্ছে…</div>';
       else if (distLedgerCtx && distLedgerCtx.error) html += `<div style="color:var(--danger);">সিজন-ব্যালেন্স পড়া যায়নি (${esc(distLedgerCtx.error)}) — সংরক্ষণের সময় আবার যাচাই হবে।</div>`;
-      html += `<div>মোট জমি: <b>${kgFmt(total)} বিঘা</b> · এই সিজনে ব্যবহৃত: <b>${kgFmt(used)} বিঘা</b> · অবশিষ্ট: <b style="color:var(--primary-dark);">${kgFmt(remain)} বিঘা</b></div>`;
+      html += `<div>মোট জমি: <b>${kgFmt(total)} বিঘা</b>${allocT < total ? ` · বরাদ্দযোগ্য: <b>${kgFmt(allocT)} বিঘা</b> <span class="muted">(সীমা ${kgFmt(maxAllocBigha())} বিঘা)</span>` : ''} · এই সিজনে ব্যবহৃত: <b>${kgFmt(used)} বিঘা</b> · অবশিষ্ট: <b style="color:var(--primary-dark);">${kgFmt(remain)} বিঘা</b></div>`;
+      if (crop && !reg) {
+        const rr = ratesForCrop(crop), row = xlsxRowForCrop(crop);
+        html += `<div style="margin-top:4px;">${esc(crop)} — প্রতি বিঘায়: ${Object.keys(rr).length ? Object.keys(rr).map(f => `${esc(f)} ${kgFmt(rr[f])}`).join(', ') + ' কেজি' : 'হার নির্ধারিত নেই'}${row ? '' : ' <span class="muted">(Excel টেবিলে এই ফসল নেই)</span>'}</div>`;
+      }
       if (L && L.crops) {
         Object.keys(L.crops).forEach(k => {
           const c = L.crops[k], bal = seasonCropBalance(c, ratesForCrop(c.crop));
@@ -7432,7 +7659,7 @@
         else {
           if (cropIn.dataset.locked) { cropIn.readOnly = false; cropIn.value = ''; delete cropIn.dataset.locked; }
           cropIn.max = remain > 0 ? remain : 0;
-          if (hint) hint.textContent = crop ? `সর্বোচ্চ ${kgFmt(remain)} বিঘা (মোট জমি থেকে এই সিজনে অবশিষ্ট)` : '';
+          if (hint) hint.textContent = crop ? `সর্বোচ্চ ${kgFmt(remain)} বিঘা (বরাদ্দযোগ্য জমি থেকে এই সিজনে অবশিষ্ট)` : '';
         }
       }
       updateDistributeStockHints();
@@ -7621,7 +7848,7 @@
       nidScan = { stream: null, busy: false, seq: (nidScan ? nidScan.seq : 0) + 1, target };
       const seq = nidScan.seq;
       openModal(`
-        <h3 style="display:flex;align-items:center;gap:8px;">📷 এনআইডি কার্ড স্ক্যান</h3>
+        <h3 style="display:flex;align-items:center;gap:8px;"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg> এনআইডি কার্ড স্ক্যান</h3>
         <p class="muted" style="margin-bottom:10px;">কার্ডটি সবুজ ফ্রেমের ভেতরে সোজা করে ধরুন, তারপর "ক্যাপচার" চাপুন। শুধু এনআইডি নম্বর পড়া হবে — ছবি কোথাও সংরক্ষণ বা আপলোড হয় না।</p>
         <div class="nid-cam" id="nidCamBox">
           <video id="nidScanVideo" playsinline muted autoplay></video>
@@ -7631,7 +7858,7 @@
         <div id="nidScanStatus" class="nid-scan-status">ক্যামেরা চালু হচ্ছে...</div>
         <div id="nidScanResult"></div>
         <div class="nid-scan-actions">
-          <button type="button" class="btn btn-primary" id="nidScanCaptureBtn" data-action="nid-scan-capture" disabled>📷 ক্যাপচার</button>
+          <button type="button" class="btn btn-primary" id="nidScanCaptureBtn" data-action="nid-scan-capture" disabled><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg> ক্যাপচার</button>
           <button type="button" class="btn btn-outline" id="nidScanRetakeBtn" data-action="nid-scan-retake" style="display:none;">আবার তুলুন</button>
           <label class="btn btn-outline" style="margin:0;">ছবি থেকে<input type="file" id="nidScanFile" accept="image/*" capture="environment" style="display:none;"></label>
           <button type="button" class="btn btn-outline" data-action="close-modal">বাতিল</button>
@@ -8050,8 +8277,9 @@
       if (nidEntryFresh && nidEntryFresh.farmerName && normalizeNameForCompare(nidEntryFresh.farmerName) === normalizeNameForCompare(data.farmerName)) data.farmerName = nidEntryFresh.farmerName;
       const regLandArea = nidEntryFresh && nidEntryFresh.landArea !== undefined && nidEntryFresh.landArea !== null && nidEntryFresh.landArea !== '' ? nidEntryFresh.landArea : data.landArea;
       try {
-        const [so, ro] = await Promise.all([dbGet('settings/distributionSeasons'), dbGet('settings/fertilizerRates')]);
+        const [so, ro, lo] = await Promise.all([dbGet('settings/distributionSeasons'), dbGet('settings/fertilizerRates'), dbGet('settings/landRules').catch(() => null)]);
         state.distSeasons = Object.values(so || {}).filter(Boolean);
+        if (lo) state.landRules = { ...DEFAULT_LAND_RULES, ...lo };
         state.fertRates = { default: { ...((ro && ro.default) || {}) }, crops: { ...((ro && ro.crops) || {}) } };
       } catch (e) { /* keep the loaded settings */ }
       const season = activeDistSeason();
@@ -8061,7 +8289,7 @@
         // fast pre-check against the farmer's current ledger (the transaction below is the real authority)
         try {
           const cur = await get(ref(db, `seasonLedger/${season.id}/${kNid(cNid)}`)).then(x => (x.exists() ? x.val() : null));
-          const pre = seasonLedgerApply(cur, { total: landBigha, crop: cropNames[0], ck: seasonCk, cropLand: cropLandBigha, items, rates: seasonRates, now: Date.now() });
+          const pre = seasonLedgerApply(cur, { total: landBigha, crop: cropNames[0], ck: seasonCk, cropLand: cropLandBigha, items, rates: seasonRates, cap: maxAllocBigha(), now: Date.now() });
           if (pre.error) { showToast(pre.error + ' — কিছুই সংরক্ষণ হয়নি', 'error'); return; }
         } catch (e) { /* transaction decides */ }
       }
@@ -8198,7 +8426,7 @@
         if (season) {
           const lref = ref(db, `seasonLedger/${season.id}/${kNid(cNid)}`);
           let lerr = null, created = false, tx = null;
-          const req = { total: landBigha, crop: cropNames[0], ck: seasonCk, cropLand: cropLandBigha, items, rates: seasonRates, now: createdAt };
+          const req = { total: landBigha, crop: cropNames[0], ck: seasonCk, cropLand: cropLandBigha, items, rates: seasonRates, cap: maxAllocBigha(), now: createdAt };
           try {
             tx = await runStockTransactionWithCacheWarmup(lref, cur => { const r = seasonLedgerApply(cur, req); if (r.error) { lerr = r.error; return; } lerr = null; created = r.created; return r.node; });
           } catch (e) { lerr = 'সিজন-ব্যালেন্স আপডেট করা যায়নি: ' + ((e && (e.message || e.code)) || ''); }
@@ -8389,7 +8617,8 @@
       const farmers = Object.keys(dealerStats.farmers || {}).length;
       const totalDistributions = dealerStats.totalDistributions || 0;
       return `
-    <div class="page-header"><h2>স্বাগতম, ${esc(state.user.name)}</h2><span class="muted">${esc(state.user.union)}</span></div>
+    <div class="page-header"><h2>ড্যাশবোর্ড</h2><span class="muted">${esc(state.user.name)} · ${esc(state.user.union)}</span></div>
+    ${renderEligCard()}
     <div class="stat-grid">
       ${statCard('আজকের বিতরণ', todayCount, 'distribute')}
       ${statCard('সর্বমোট বিতরণ', totalDistributions, 'history')}
@@ -9395,6 +9624,136 @@
   `;
     }
 
+    /* ================= V12: ড্যাশবোর্ড — কৃষকের যোগ্যতা যাচাই (NID / মোবাইল) =================
+       ১) NID বা মোবাইল দিয়ে distributions-এ indexed query (পুরো টেবিল নয়) → কৃষকের NID, নাম, জমি
+       ২) চলমান সিজনের seasonLedger → ব্যবহৃত/অবশিষ্ট জমি, নিবন্ধিত ফসলের ব্যালেন্স
+       ৩) ফসল + জমি বেছে নিলে Excel টেবিল অনুযায়ী প্রতি বিঘা × জমি = প্রাপ্য সার (সঙ্গে সঙ্গে, নেটওয়ার্ক ছাড়া) */
+    state.elig = { q: '', loading: false, error: '', res: null, crop: '', land: '', seq: 0 };
+    async function eligibilitySearch(q) {
+      const E = state.elig, seq = ++E.seq;
+      q = String(q || '').trim(); E.q = q; E.error = ''; E.res = null; E.crop = ''; E.land = '';
+      const digits = normalizeBanglaDigits(q).replace(/[\s\-]/g, '').replace(/^\+?88(?=01)/, '');
+      const isMob = /^01[0-9]{9}$/.test(digits), isNid = !isMob && /^[0-9]{10,17}$/.test(digits);
+      if (!q) { renderEligPanel(); return; }
+      if (!isMob && !isNid) { E.error = 'সঠিক এনআইডি (১০–১৭ অঙ্ক) বা মোবাইল নম্বর (01XXXXXXXXX) দিন'; renderEligPanel(); return; }
+      E.loading = true; renderEligPanel();
+      try {
+        const base = ref(db, 'distributions');
+        let rows;
+        if (isMob) {
+          const [a, b] = await Promise.all([get(query(base, orderByChild('mobile'), equalTo(kMob(digits)), limitToLast(200))), get(query(base, orderByChild('nid'), equalTo(kNid(digits)), limitToLast(200)))]);
+          const seen = new Set(); rows = [...snapToOrderedArray(a), ...snapToOrderedArray(b)].filter(r => (seen.has(r.id) ? false : seen.add(r.id)));
+        } else rows = snapToOrderedArray(await get(query(base, orderByChild('nid'), equalTo(kNid(digits)), limitToLast(200))));
+        rows.sort((x, y) => (Number(y.createdAt) || new Date(y.date) || 0) - (Number(x.createdAt) || new Date(x.date) || 0));
+        const nids = [...new Set(rows.map(r => canonicalNid(r.nid)).filter(n => /^[0-9]{10,17}$/.test(n)))];
+        const cNid = isNid ? digits : (nids[0] || '');
+        const mine = rows.filter(r => canonicalNid(r.nid) === cNid);
+        const latest = mine[0] || null;
+        const season = activeDistSeason();
+        let ledger = null, member = null;
+        if (cNid) {
+          const jobs = [fcMembership(cNid).then(m => { member = m; }).catch(() => null)];
+          if (season) jobs.push(get(ref(db, `seasonLedger/${season.id}/${kNid(cNid)}`)).then(x => { ledger = x.exists() ? x.val() : null; }));
+          await Promise.all(jobs);
+        }
+        if (seq !== E.seq) return;
+        let recLand = 0;
+        if (latest) recLand = Number(latest.landBigha) > 0 ? Number(latest.landBigha) : (Number(latest.landArea) > 0 ? Math.round(Number(latest.landArea) / BIGHA_TO_SHOTANGSHO * 100) / 100 : 0);
+        E.res = { kind: isMob ? 'mobile' : 'nid', input: digits, nid: cNid, otherNids: nids.filter(n => n !== cNid), latest, count: mine.length, season, ledger, member, recLand };
+        const firstFree = XLSX_RATE_TABLE.find(r => !(ledger && ledger.crops && ledger.crops[seasonCropKey(r.crop)]));
+        E.crop = (latest && latest.cropName && xlsxRowForCrop(String(latest.cropName).split(',')[0])) ? xlsxRowForCrop(String(latest.cropName).split(',')[0]).crop : (firstFree ? firstFree.crop : XLSX_RATE_TABLE[0].crop);
+      } catch (e) {
+        if (seq !== E.seq) return;
+        E.error = 'খোঁজা যায়নি: ' + ((e && (e.message || e.code)) || 'ইন্টারনেট সংযোগ বা Firebase Rules/Index চেক করুন');
+      }
+      E.loading = false; renderEligPanel();
+    }
+    function eligLandFacts(res) {
+      const L = res.ledger, total = L && Number(L.totalLandBigha) > 0 ? Number(L.totalLandBigha) : res.recLand;
+      const used = L ? Number(L.usedLandBigha) || 0 : 0, allocT = allocTotalBigha(total);
+      return { total, used, allocT, remain: ledR(Math.max(0, allocT - used)), known: total > 0 };
+    }
+    function eligCalcHtml() {
+      const E = state.elig, res = E.res; if (!res) return '';
+      const f = eligLandFacts(res), row = xlsxRowForCrop(E.crop);
+      const reg = res.ledger && res.ledger.crops ? res.ledger.crops[seasonCropKey(E.crop)] : null;
+      const land = reg ? Number(reg.landBigha) || 0 : (E.land !== '' ? Math.max(0, parseFloat(normalizeBanglaDigits(E.land)) || 0) : (f.known && res.season ? f.remain : Math.min(maxAllocBigha() || 5, 5)));
+      const over = !reg && res.season && f.known && land > f.remain + 1e-6;
+      const rates = ratesForCrop(E.crop);
+      const lines = FERTILIZERS.map(x => {
+        const rate = rates[x.v] || 0, ent = ledR(rate * land), taken = reg && reg.taken ? Number(reg.taken[x.v]) || 0 : 0;
+        return `<tr><td>${esc(x.v)}</td><td class="num muted">${row && row.r[x.v] ? xlsxRangeText(row.r[x.v]) : '—'}</td><td class="num">${rate ? kgFmt(rate) : '—'}</td><td class="num"><b>${rate ? kgFmt(ent) : '—'}</b></td>${reg ? `<td class="num">${kgFmt(taken)}</td><td class="num"><b class="elig-pos">${kgFmt(Math.max(0, ent - taken))}</b></td>` : ''}</tr>`;
+      }).join('');
+      const adv = row ? XLSX_ADVISORY_FERTS.filter(k => row.r[k]).map(k => `${esc(k)} ${row.r[k][0] === row.r[k][1] ? kgFmt(ledR(row.r[k][1] * land)) : `${kgFmt(ledR(row.r[k][0] * land))}–${kgFmt(ledR(row.r[k][1] * land))}`} কেজি`).join(' · ') : '';
+      return `
+        <div class="elig-calc-head">
+          <label class="elig-field"><span>ফসল</span><select id="eligCrop">${XLSX_RATE_TABLE.map(r => `<option${r.crop === E.crop ? ' selected' : ''}>${esc(r.crop)}</option>`).join('')}</select></label>
+          <label class="elig-field"><span>জমি (বিঘা)</span><input id="eligLand" type="number" min="0" step="0.01" inputmode="decimal" value="${esc(String(reg ? reg.landBigha : (E.land !== '' ? E.land : land)))}" ${reg ? 'readonly' : ''}></label>
+          <p class="elig-note">${reg ? `এই ফসল সিজনে আগেই ${kgFmt(reg.landBigha)} বিঘায় নিবন্ধিত — নিচে বাকি ব্যালেন্স` : over ? `<span class="elig-neg">অবশিষ্ট বরাদ্দযোগ্য জমি ${kgFmt(f.remain)} বিঘা — এর বেশি দেওয়া যাবে না</span>` : '১ বিঘা = ৩৩ শতাংশ · বরাদ্দ = প্রতি বিঘার সর্বোচ্চ মান × জমি'}</p>
+        </div>
+        <div class="table-wrap"><table class="data-table elig-table"><thead><tr><th>সার</th><th class="num">সুপারিশ / বিঘা</th><th class="num">বরাদ্দ হার</th><th class="num">প্রাপ্য (কেজি)</th>${reg ? '<th class="num">নেওয়া</th><th class="num">বাকি</th>' : ''}</tr></thead><tbody>${lines}</tbody></table></div>
+        ${adv ? `<p class="elig-note">অন্যান্য সুপারিশ (বিতরণের বাইরে): ${adv}</p>` : ''}`;
+    }
+    function eligResultHtml() {
+      const E = state.elig, res = E.res;
+      if (E.loading) return '<div class="loading">খোঁজা হচ্ছে…</div>';
+      if (E.error) return `<div class="elig-msg elig-neg">${esc(E.error)}</div>`;
+      if (!res) return `<p class="elig-note">কৃষকের এনআইডি বা মোবাইল লিখলে চলতি সিজনে তিনি কোন ফসলে কত সার পাবেন তা দেখা যাবে।</p>`;
+      if (!res.nid) return `<div class="elig-msg">এই মোবাইল নম্বরে কোনো বিতরণ রেকর্ড নেই। নতুন কৃষক হলে এনআইডি দিয়ে খুঁজুন।</div>`;
+      const f = eligLandFacts(res), L = res.ledger, s = res.season, lt = res.latest;
+      const balLeft = L && L.crops ? Object.keys(L.crops).some(k => { const b = seasonCropBalance(L.crops[k], ratesForCrop(L.crops[k].crop)); return Object.keys(b).some(x => b[x].bal > 0); }) : false;
+      let verdict, tone;
+      if (!s) { verdict = 'সিজন চালু নেই — জমি-ভিত্তিক বরাদ্দ বন্ধ'; tone = 'muted'; }
+      else if (!f.known) { verdict = 'নতুন কৃষক — প্রথম বিতরণে জমি নিবন্ধন হবে'; tone = 'ok'; }
+      else if (f.remain > 0 || balLeft) { verdict = 'সার পাওয়ার যোগ্য'; tone = 'ok'; }
+      else { verdict = 'এই সিজনের বরাদ্দ শেষ'; tone = 'neg'; }
+      const crops = L && L.crops ? Object.keys(L.crops).map(k => L.crops[k]) : [];
+      return `
+      <div class="elig-person">
+        <div>
+          <div class="elig-name">${lt ? esc(lt.farmerName) : 'নাম রেকর্ডে নেই'}</div>
+          <div class="elig-meta">এনআইডি <span class="mono">${esc(res.nid)}</span>${lt && lt.mobile ? ` · মোবাইল <span class="mono">${esc(lt.mobile)}</span>` : ''}${lt && lt.union ? ` · ${esc(lt.union)}` : ''}${lt && lt.village ? `, ${esc(lt.village)}` : ''}</div>
+        </div>
+        <span class="elig-verdict ${tone}"><i></i>${verdict}</span>
+      </div>
+      ${res.otherNids.length ? `<p class="elig-note">এই মোবাইলে আরও ${res.otherNids.length}টি এনআইডি আছে: ${res.otherNids.map(n => `<button type="button" class="elig-link mono" data-action="elig-open" data-nid="${esc(n)}">${esc(n)}</button>`).join(' ')}</p>` : ''}
+      <dl class="elig-facts">
+        <div><dt>মোট জমি</dt><dd>${f.known ? kgFmt(f.total) : '—'}<small>বিঘা</small></dd></div>
+        <div><dt>বরাদ্দযোগ্য</dt><dd>${f.known ? kgFmt(f.allocT) : kgFmt(maxAllocBigha() || 0)}<small>বিঘা${maxAllocBigha() > 0 ? ` · সীমা ${kgFmt(maxAllocBigha())}` : ''}</small></dd></div>
+        <div><dt>এই সিজনে ব্যবহৃত</dt><dd>${kgFmt(f.used)}<small>বিঘা</small></dd></div>
+        <div><dt>অবশিষ্ট</dt><dd class="${f.remain > 0 || !f.known ? 'elig-pos' : ''}">${f.known ? kgFmt(f.remain) : '—'}<small>বিঘা</small></dd></div>
+      </dl>
+      <p class="elig-note">${s ? `সিজন ${esc(s.name)} · ${ddmmyyyy(s.startDate)} – ${ddmmyyyy(s.endDate)}` : 'সক্রিয় সিজন নেই'} · মোট ${res.count.toLocaleString('bn-BD')}টি বিতরণ রেকর্ড${lt ? ` · সর্বশেষ ${formatDate(lt.date)}` : ''}</p>
+      ${crops.length ? `<div class="elig-sub">এই সিজনে নিবন্ধিত ফসল</div><ul class="elig-crops">${crops.map(c => { const b = seasonCropBalance(c, ratesForCrop(c.crop)); return `<li><b>${esc(c.crop)}</b><span class="mono">${kgFmt(c.landBigha)} বিঘা</span><span>${Object.keys(b).map(x => `${esc(x)} বাকি ${kgFmt(b[x].bal)}/${kgFmt(b[x].ent)}`).join(' · ') || 'হার নির্ধারিত নেই'}</span></li>`; }).join('')}</ul>` : ''}
+      ${res.member ? fcMemberHtml(res.member) : ''}
+      <div class="elig-sub">ফসলভিত্তিক প্রাপ্যতা (Excel টেবিল)</div>
+      <div id="eligCalc">${eligCalcHtml()}</div>`;
+    }
+    function renderEligCard() {
+      return `<section class="glass-card elig-card" id="eligPanel">
+      <div class="elig-top">
+        <div><h3>কৃষকের যোগ্যতা যাচাই</h3><p class="elig-note" style="margin:0;">এনআইডি বা মোবাইল দিয়ে</p></div>
+        <form class="elig-search" id="eligForm" autocomplete="off">
+          <input type="text" id="eligInput" inputmode="numeric" value="${esc(state.elig.q)}" placeholder="এনআইডি বা 01XXXXXXXXX" aria-label="এনআইডি বা মোবাইল">
+          <button type="submit" class="btn btn-primary">${ic('search', 'icon-sm')} খুঁজুন</button>
+        </form>
+      </div>
+      <div id="eligBody">${eligResultHtml()}</div>
+    </section>`;
+    }
+    function renderEligPanel() { const b = document.getElementById('eligBody'); if (b) b.innerHTML = eligResultHtml(); }
+    function renderEligCalc() { const c = document.getElementById('eligCalc'); if (c) c.innerHTML = eligCalcHtml(); }
+    document.addEventListener('submit', e => { if (e.target && e.target.id === 'eligForm') { e.preventDefault(); const i = document.getElementById('eligInput'); eligibilitySearch(i ? i.value : ''); } });
+    document.addEventListener('change', e => { if (e.target && e.target.id === 'eligCrop') { state.elig.crop = e.target.value; state.elig.land = ''; renderEligCalc(); } });
+    document.addEventListener('input', e => {
+      if (e.target && e.target.id === 'eligLand') {
+        state.elig.land = e.target.value;
+        const pos = e.target.selectionStart; renderEligCalc();
+        const n = document.getElementById('eligLand'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (x) { /* number input */ } }
+      }
+    });
+    document.addEventListener('click', e => { const t = e.target && e.target.closest && e.target.closest('[data-action="elig-open"]'); if (t) { const i = document.getElementById('eligInput'); if (i) i.value = t.dataset.nid; eligibilitySearch(t.dataset.nid); } });
+
     /* ---------------- reports ---------------- */
     /* Reads straight from the small, already-loaded dashboardStats aggregate —
        no network call at all when this page opens, and no dependency on the
@@ -9583,7 +9942,7 @@
       const t = todayStr(), act = activeDistSeason();
       const R = state.fertRates || { default: {}, crops: {} };
       const crops = CROPS.filter(c => c !== CROP_CUSTOM_VALUE);
-      const cell = (scope, f) => { const v = scope === '*' ? (R.default || {})[f] : ((R.crops || {})[seasonCropKey(scope)] || {})[f]; return `<td><input type="number" min="0" step="0.01" style="width:78px;padding:6px;" data-rate-crop="${esc(scope)}" data-rate-fert="${esc(f)}" value="${v === undefined || v === null ? '' : esc(v)}" placeholder="${scope === '*' ? '০' : 'ডিফল্ট'}"></td>`; };
+      const cell = (scope, f) => { const v = scope === '*' ? (R.default || {})[f] : ((R.crops || {})[seasonCropKey(scope)] || {})[f]; const row = scope === '*' ? null : xlsxRowForCrop(scope), xv = row && row.r[f] ? row.r[f][1] : null; return `<td><input type="number" min="0" step="0.01" style="width:78px;padding:6px;" data-rate-crop="${esc(scope)}" data-rate-fert="${esc(f)}" value="${v === undefined || v === null ? '' : esc(v)}" placeholder="${scope === '*' ? '০' : (xv !== null ? kgFmt(xv) : 'ডিফল্ট')}" title="${xv !== null ? `Excel সুপারিশ: ${xlsxRangeText(row.r[f])} কেজি/বিঘা` : ''}"></td>`; };
       const seasons = (state.distSeasons || []).slice().sort((a, b) => String(b.startDate || '').localeCompare(String(a.startDate || '')));
       return `
     <div class="glass-card" style="max-width:820px;margin-bottom:16px;">
@@ -9600,12 +9959,17 @@
     </div>
     <div class="glass-card" style="max-width:820px;margin-bottom:16px;">
       <h3 style="margin-bottom:4px;">প্রতি বিঘায় সারের হার (কেজি)</h3>
-      <p class="muted" style="margin-bottom:10px;">"ডিফল্ট" সারি সব ফসলে প্রযোজ্য; কোনো ফসলের ঘরে আলাদা মান দিলে সেই ফসলে সেটাই চলবে (ঘর খালি = ডিফল্ট)। ০ বা খালি = ঐ সারের জমি-ভিত্তিক সীমা নেই (শুধু মজুদ অনুযায়ী)।</p>
+      <p class="muted" style="margin-bottom:10px;">ঘর খালি থাকলে উপজেলা কৃষি অফিসের Excel সুপারিশ টেবিলের সর্বোচ্চ মান চলে (ঘরের ধূসর লেখা)। কোনো ঘরে মান লিখলে সেই ফসলে সেটাই চলবে। "ডিফল্ট" সারি শুধু টেবিলের বাইরের ফসলে (নিজে লিখুন) প্রযোজ্য।</p>
       <div class="table-wrap"><table class="data-table" style="min-width:560px;"><thead><tr><th>ফসল</th>${FERTILIZERS.map(f => `<th>${esc(f.v)}</th>`).join('')}</tr></thead><tbody>
         <tr><td><b>ডিফল্ট</b></td>${FERTILIZERS.map(f => cell('*', f.v)).join('')}</tr>
         ${crops.map(c => `<tr><td>${esc(c)}</td>${FERTILIZERS.map(f => cell(c, f.v)).join('')}</tr>`).join('')}
       </tbody></table></div>
-      <button type="button" class="btn btn-primary btn-sm" data-action="save-fert-rates" style="margin-top:10px;">হার সংরক্ষণ করুন</button>
+      <div class="fc-row" style="margin-top:10px;"><button type="button" class="btn btn-primary btn-sm" data-action="save-fert-rates">হার সংরক্ষণ করুন</button><button type="button" class="btn btn-outline btn-sm" data-action="reset-fert-rates-xlsx">সব ফসলের ঘর খালি করে Excel টেবিলে ফিরুন</button></div>
+    </div>
+    <div class="glass-card" style="max-width:820px;margin-bottom:16px;">
+      <h3 style="margin-bottom:4px;">বরাদ্দযোগ্য জমির সর্বোচ্চ সীমা</h3>
+      <p class="muted" style="margin-bottom:10px;">একজন কৃষক এক সিজনে সব ফসল মিলিয়ে সর্বোচ্চ এত বিঘার জন্য সার বরাদ্দ পাবেন, মোট জমি বেশি হলেও। ০ দিলে সীমা থাকবে না।</p>
+      <div class="fc-row"><input type="number" id="maxAllocInput" min="0" step="0.01" value="${esc(maxAllocBigha())}" style="max-width:160px;"><span>বিঘা</span><button type="button" class="btn btn-primary btn-sm" data-action="save-max-alloc">সংরক্ষণ করুন</button></div>
     </div>
     <div class="glass-card" style="max-width:820px;margin-bottom:16px;">
       <h3 style="margin-bottom:4px;">দাগ ও খতিয়ান বাধ্যতামূলক হওয়ার জমির সীমা</h3>
@@ -9822,6 +10186,28 @@
         writeSystemLog('settings', 'fertilizer_rates_updated', JSON.stringify(out.default));
         showToast('প্রতি-বিঘা হার সংরক্ষণ হয়েছে', 'success');
         syncPublicConfig(false);
+      } catch (e) { showToast('সংরক্ষণ করা যায়নি: ' + ((e && (e.message || e.code)) || ''), 'error'); }
+    }
+    async function handleSaveMaxAlloc() {
+      const raw = normalizeBanglaDigits((document.getElementById('maxAllocInput') || {}).value || '').trim();
+      const v = Number(raw);
+      if (raw === '' || !(v >= 0) || v > 100000) return showToast('সঠিক জমির পরিমাণ (বিঘা) দিন — ০ মানে সীমা নেই', 'error');
+      try {
+        await dbSet('settings/landRules', { ...(state.landRules || {}), maxAllocBigha: v });
+        state.landRules = { ...(state.landRules || {}), maxAllocBigha: v };
+        writeSystemLog('settings', 'max_alloc_bigha', v > 0 ? `${v} বিঘা` : 'সীমা নেই');
+        showToast('সংরক্ষণ হয়েছে', 'success');
+      } catch (e) { showToast('সংরক্ষণ করা যায়নি: ' + ((e && (e.message || e.code)) || ''), 'error'); }
+    }
+    async function handleResetFertRatesXlsx() {
+      if (!confirm('সব ফসলের আলাদা করে লেখা হার মুছে Excel সুপারিশ টেবিল চালু হবে ("ডিফল্ট" সারি থাকবে)। নিশ্চিত?')) return;
+      const out = { default: { ...((state.fertRates && state.fertRates.default) || {}) }, crops: {} };
+      try {
+        await dbSet('settings/fertilizerRates', out);
+        state.fertRates = out;
+        writeSystemLog('settings', 'fertilizer_rates_xlsx', 'ফসলভিত্তিক হার Excel টেবিলে ফেরানো হয়েছে');
+        showToast('Excel টেবিল অনুযায়ী হার চালু হয়েছে', 'success');
+        syncPublicConfig(false); renderCurrentView();
       } catch (e) { showToast('সংরক্ষণ করা যায়নি: ' + ((e && (e.message || e.code)) || ''), 'error'); }
     }
     async function handleSaveDkThreshold() {
@@ -12653,7 +13039,7 @@
     </div></div>`;
       h += `<div class="glass-card" style="margin-bottom:14px;max-width:820px;">
     <form id="fcLookupForm"><div class="field" style="margin-bottom:0;"><label>কৃষকের এনআইডি নম্বর</label>
-      <div class="fc-row"><button type="button" class="btn btn-outline btn-sm" data-action="ocr-nid" data-target="fcNidInput">📷 স্ক্যান</button><input name="nid" id="fcNidInput" inputmode="numeric" autocomplete="off" value="${esc(D.nid)}" placeholder="এনআইডি লিখুন" required>
+      <div class="fc-row"><button type="button" class="btn btn-outline btn-sm" data-action="ocr-nid" data-target="fcNidInput"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg> স্ক্যান</button><input name="nid" id="fcNidInput" inputmode="numeric" autocomplete="off" value="${esc(D.nid)}" placeholder="এনআইডি লিখুন" required>
       <button type="submit" class="btn btn-primary" ${D.lookupLoading ? 'disabled' : ''}>${D.lookupLoading ? 'খোঁজা হচ্ছে…' : 'খুঁজুন'}</button></div></div></form></div>`;
       if (D.message) h += `<div class="${D.message.type === 'warn' ? 'duplicate-alert' : 'db-error'}" style="margin-bottom:14px;max-width:820px;">${esc(D.message.text)}</div>`;
       if (D.farmer) {
@@ -13255,6 +13641,8 @@
         case 'remove-fert-row': removeFertRow(target); break;
         case 'add-crop-row': addCropRow(); break;
         case 'remove-crop-row': removeCropRow(target); break;
+        case 'save-max-alloc': await handleSaveMaxAlloc(); break;
+        case 'reset-fert-rates-xlsx': await handleResetFertRatesXlsx(); break;
         case 'search-farmer': {
           const input = document.getElementById('farmerSearchInput');
           await performFarmerSearchAsync(input ? input.value.trim() : '');
@@ -13577,7 +13965,7 @@
     var homeLang = 'bn';
     var publicStats = { farmers: null, dealers: null, records: null, kg: null };
     var publicStatsLoadedAt = 0;
-    const HOME_EN = {"brand1":"FDMS Shibganj","brand3":"Upazila Agriculture Office, Shibganj, Chapainawabganj","nav_home":"Home","nav_farmer":"Farmer Info","nav_dealer":"Dealer Info","nav_dist":"Distribution","nav_reports":"Reports","nav_contact":"Contact","login":"Login","login_long":"Officer / Dealer Login","badge":"Shibganj Upazila | Chapainawabganj","h1":"Fertilizer Distribution Management System","sub":"A transparent, digital and farmer-friendly fertilizer distribution system","desc":"A digital platform built to make government fertilizer distribution among farmers more transparent, orderly and easy.","search_label":"Farmer search","ph_search":"Enter NID or mobile number","search_btn":"Search","hint":"Check your fertilizer entitlement and past receipts with your NID or mobile number","lock":"To protect farmers' personal data, searching by name and viewing details requires a dealer/officer login","tagline":"Farmers' prosperity is our goal","photoAlt":"A Bangladeshi farmer holding rice seedlings in a paddy field","st_farmers":"Total Farmers","u_person":"farmers","st_dealers":"Total Dealers","u_dealer":"dealers","st_records":"Total Distributions (records)","u_record":"records","st_kg":"Total Fertilizer Distributed","u_kg":"kg","q_title":"Quick Access","q_sub":"Use the options below to easily find the information you need","q1_t":"Farmer Info","q1_d":"Search farmer registration and fertilizer distribution records","q2_t":"Dealer Info","q2_d":"List of approved dealers and distribution centres","q3_t":"Distribution","q3_d":"Upazila-wise fertilizer distribution and related information","q4_t":"Reports","q4_d":"Upazila-wise distribution reports and statistics","w_title":"Why FDMS?","w_sub":"Our goal is simple, fast and reliable information services for farmers","w1_t":"Farmer Verification","w1_d":"Easy verification of farmers by NID and mobile number","w2_t":"Transparency","w2_d":"Every distribution is recorded digitally","w3_t":"Duplicate Prevention","w3_d":"Digital checks stop repeated distribution to the same farmer","w4_t":"Dealer Management","w4_d":"Records of approved dealers and distribution centres","w5_t":"Data-driven Reports","w5_d":"Accurate upazila-level reports and statistics","m_h":"Supporting agricultural development, funding and planning","m_p":"Our commitment is a transparent, accountable and farmer-friendly fertilizer distribution system built with digital technology.","t_title":"Officials & Developer","p1_t":"Upazila Nirbahi Officer (UNO)","p1_n":"Mazharul Islam","p1_l":"Shibganj Upazila, Chapainawabganj","p1_c":"Primary administration","p2_t":"Additional Agriculture Officer","p2_n":"Agriculturist Md. Abdun Noor","p2_l":"Upazila Agriculture Office, Shibganj","p2_c":"Upazila Agriculture Office","p3_t":"System Developer","p3_n":"Hridoy Hasan Rafi","p3_l":"FDMS System Developer","p3_c":"Design & development","m_img1":"Rice seedlings in a farmer's hands","m_img2":"A green paddy field in the morning","cr_kick":"With gratitude","cr_title":"The people behind FDMS","cr_sub":"Tap a photo to see each person's details","cr_av1":"UNO","cr_av2":"Agri. Officer","cr_av3":"Developer","cr1":"Mazharul Islam — Upazila Nirbahi Officer (UNO), Shibganj; BCS 36th batch; primary administration","cr2":"Agriculturist Md. Abdun Noor — Additional Agriculture Officer, Shibganj; Upazila Agriculture Office","cr3":"Hridoy Hasan Rafi — Apps & Web Developer, FDMS System Developer; SSC 2026; design & development","f_mobile":"Phone","f_email":"Email","f_tag1":"Transparent fertilizer distribution","f_tag2":"Prosperous agriculture, prosperous Shibganj","f_links":"Important Links","f_help":"Support","f_guide":"User Guide","f_faq":"FAQ","f_privacy":"Privacy Policy","f_terms":"Terms of Use","f_contact":"Contact","f_addr1":"Upazila Administration","f_addr2":"Shibganj, Chapainawabganj","f_ao":"Upazila Agriculture Office"};
+    const HOME_EN = {"brand1":"FDMS Shibganj","brand3":"Upazila Agriculture Office, Shibganj, Chapainawabganj","nav_home":"Home","nav_farmer":"Farmer Info","nav_dealer":"Dealer Info","nav_dist":"Distribution","nav_reports":"Reports","nav_contact":"Contact","login":"Login","login_long":"Officer / Dealer Login","badge":"Shibganj Upazila | Chapainawabganj","h1":"Fertilizer Distribution Management System","sub":"A transparent, digital and farmer-friendly fertilizer distribution system","desc":"A digital platform built to make government fertilizer distribution among farmers more transparent, orderly and easy.","search_label":"Farmer search","ph_search":"Enter NID or mobile number","search_btn":"Search","hint":"Check your fertilizer entitlement and past receipts with your NID or mobile number","lock":"To protect farmers' personal data, searching by name and viewing details requires a dealer/officer login","tagline":"Farmers' prosperity is our goal","photoAlt":"A Bangladeshi farmer holding rice seedlings in a paddy field","st_farmers":"Total Farmers","u_person":"farmers","st_dealers":"Total Dealers","u_dealer":"dealers","st_records":"Total Distributions (records)","u_record":"records","st_kg":"Total Fertilizer Distributed","u_kg":"kg","q_title":"Quick Access","q_sub":"Use the options below to easily find the information you need","q1_t":"Farmer Info","q1_d":"Search farmer registration and fertilizer distribution records","q2_t":"Dealer Info","q2_d":"List of approved dealers and distribution centres","q3_t":"Distribution","q3_d":"Upazila-wise fertilizer distribution and related information","q4_t":"Reports","q4_d":"Upazila-wise distribution reports and statistics","w_title":"Why FDMS?","w_sub":"Our goal is simple, fast and reliable information services for farmers","w1_t":"Farmer Verification","w1_d":"Easy verification of farmers by NID and mobile number","w2_t":"Transparency","w2_d":"Every distribution is recorded digitally","w3_t":"Duplicate Prevention","w3_d":"Digital checks stop repeated distribution to the same farmer","w4_t":"Dealer Management","w4_d":"Records of approved dealers and distribution centres","w5_t":"Data-driven Reports","w5_d":"Accurate upazila-level reports and statistics","m_h":"Supporting agricultural development, funding and planning","m_p":"Our commitment is a transparent, accountable and farmer-friendly fertilizer distribution system built with digital technology.","t_title":"Officials & Developer","p1_t":"Upazila Nirbahi Officer (UNO)","p1_n":"Mazharul Islam","p1_l":"Shibganj Upazila, Chapainawabganj","p1_c":"Primary administration","p2_t":"Upazila Agriculture Officer","p2_n":"Agriculturist Md. Nayon Mia","p2_l":"Upazila Agriculture Office, Shibganj","p2_c":"Upazila Agriculture Office","p3_t":"System Developer","p3_n":"Hridoy Hasan Rafi","p3_l":"FDMS System Developer","p3_c":"Design & development","m_img1":"Rice seedlings in a farmer's hands","m_img2":"A green paddy field in the morning","cr_kick":"With gratitude","cr_title":"The people behind FDMS","cr_sub":"Tap a photo to see each person's details","cr_av1":"UNO","cr_av2":"Agri. Officer","cr_av3":"Developer","cr1":"Mazharul Islam — Upazila Nirbahi Officer (UNO), Shibganj; BCS 36th batch; primary administration","cr2":"Agriculturist Md. Nayon Mia — Upazila Agriculture Officer, Shibganj; Upazila Agriculture Office","cr3":"Hridoy Hasan Rafi — Apps & Web Developer, FDMS System Developer; SSC 2026; design & development","f_mobile":"Phone","f_email":"Email","f_tag1":"Transparent fertilizer distribution","f_tag2":"Prosperous agriculture, prosperous Shibganj","f_links":"Important Links","f_help":"Support","f_guide":"User Guide","f_faq":"FAQ","f_privacy":"Privacy Policy","f_terms":"Terms of Use","f_contact":"Contact","f_addr1":"Upazila Administration","f_addr2":"Shibganj, Chapainawabganj","f_ao":"Upazila Agriculture Office"};
     const HOME_INFO = { "guide": ["ব্যবহার নির্দেশিকা", "<div class=\"hp-info\">\n<h4>কৃষকদের জন্য</h4>\n<ul><li>সার নিতে নিজ ইউনিয়নের সরকার নিবন্ধিত ডিলারের কাছে যান।</li>\n<li>সঙ্গে আনুন: জাতীয় পরিচয়পত্র (এনআইডি), নিজের সচল মোবাইল নম্বর, জমির তথ্য (পরিমাণ শতাংশে, মৌজা, দাগ ও খতিয়ান নম্বর) এবং কোন ফসলের জন্য সার নিচ্ছেন।</li>\n<li>একবার নিবন্ধিত হলে পরের বার শুধু এনআইডি নম্বর বললেই আপনার তথ্য সিস্টেমে চলে আসবে।</li>\n<li>একই ফসলের জন্য একই সার নির্ধারিত সময়ের আগে আবার দেওয়া হয় না; অন্য ফসলের জন্য সার নেওয়া যায়।</li></ul>\n<h4>ডিলার ও কর্মকর্তাদের জন্য</h4>\n<ul><li>\"লগইন\" বা যেকোনো সেবায় ক্লিক করে নিজের ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন।</li>\n<li>লগইনের পর আপনার দায়িত্ব অনুযায়ী প্যানেল খুলবে; ১৫ মিনিট নিষ্ক্রিয় থাকলে নিরাপত্তার জন্য স্বয়ংক্রিয়ভাবে লগ আউট হবে।</li></ul></div>"], "faq": ["সাধারণ জিজ্ঞাসা", "<div class=\"hp-info\">\n<h4>লগইন ছাড়া কৃষকের তথ্য দেখা যায় না কেন?</h4><p>এনআইডি, মোবাইল নম্বর ও জমির তথ্য ব্যক্তিগত। তাই শুধু অনুমোদিত ডিলার ও কর্মকর্তারা লগইন করে এসব তথ্য দেখতে পারেন। হোম পেজে শুধু মোট সংখ্যা দেখানো হয়।</p>\n<h4>একই সার আবার কবে পাব?</h4><p>একই ফসলের জন্য একই সার উপজেলা কৃষি অফিসের নির্ধারিত সময়ের পর আবার পাওয়া যায়। অন্য ফসলের জন্য বা অন্য সার এর আগেই নেওয়া যায়।</p>\n<h4>আমার তথ্য ভুল থাকলে কী করব?</h4><p>উপজেলা কৃষি অফিসে যোগাযোগ করুন — নিবন্ধিত তথ্যের সংশোধন সেখান থেকেই করা হয়।</p>\n<h4>ডিলার বেশি দাম চাইলে বা সার না দিলে?</h4><p>উপজেলা কৃষি অফিস বা উপজেলা প্রশাসনে জানান।</p></div>"], "privacy": ["গোপনীয়তা নীতি", "<div class=\"hp-info\">\n<h4>কোন তথ্য সংরক্ষণ করা হয়</h4><p>কৃষকের নাম, এনআইডি, মোবাইল নম্বর, গ্রাম, জমির তথ্য, ফসলের নাম, সারের ধরন, পরিমাণ ও তারিখ।</p>\n<h4>কেন সংরক্ষণ করা হয়</h4><p>ন্যায্য ও স্বচ্ছ সার বিতরণ, একই কৃষককে বারবার বিতরণ প্রতিরোধ এবং উপজেলা পর্যায়ের প্রতিবেদন তৈরির জন্য।</p>\n<h4>কে দেখতে পারেন</h4><p>শুধু লগইন করা অনুমোদিত ব্যবহারকারী: ডিলার শুধু নিজের এন্ট্রি, এবং উপজেলা নির্বাহী অফিসার ও উপজেলা কৃষি অফিস প্রয়োজনীয় তথ্য। হোম পেজে কোনো ব্যক্তিগত তথ্য প্রকাশ করা হয় না — শুধু মোট সংখ্যা।</p>\n<h4>নিরাপত্তা</h4><p>লগইন ও তথ্য সংরক্ষণে Firebase Authentication ও ডাটাবেজ নিরাপত্তা নিয়ম ব্যবহার করা হয়; গুরুত্বপূর্ণ কার্যক্রমের লগ রাখা হয়।</p></div>"], "terms": ["শর্তাবলি", "<div class=\"hp-info\"><ul>\n<li>লগইন অ্যাকাউন্ট শুধু উপজেলা প্রশাসন অনুমোদিত ডিলার ও কর্মকর্তাদের জন্য।</li>\n<li>নিজের পাসওয়ার্ড কারও সাথে শেয়ার করবেন না।</li>\n<li>প্রতিটি এন্ট্রি ব্যবহারকারীর পরিচয়সহ সংরক্ষিত হয় এবং গুরুত্বপূর্ণ কার্যক্রমের লগ রাখা হয়।</li>\n<li>ভুয়া, ডুপ্লিকেট বা অন্যের এনআইডি দিয়ে এন্ট্রি করা নিষিদ্ধ।</li>\n<li>তথ্য সংশোধনের প্রয়োজন হলে উপজেলা কৃষি অফিসের মাধ্যমে করতে হবে।</li></ul></div>"] };
     const PUBLIC_TARGETS = {
       farmer: { label: 'কৃষক তথ্য', admin: 'farmerSearch', uno: 'farmerSearch', dealer: 'farmerSearch' },
@@ -13739,8 +14127,8 @@
     const HOME_CREDITS = [
   { bn: ['প্রধান প্রশাসন', 'মাজহারুল ইসলাম', 'উপজেলা নির্বাহী অফিসার (UNO), শিবগঞ্জ', 'বিসিএস ৩৬তম ব্যাচ'],
     en: ['Primary administration', 'Mazharul Islam', 'Upazila Nirbahi Officer (UNO), Shibganj', 'BCS 36th batch'] },
-  { bn: ['উপজেলা কৃষি অফিস', 'কৃষিবিদ মো: আব্দুন নূর', 'অতিরিক্ত কৃষি অফিসার, শিবগঞ্জ', 'অফিস: +৮৮০২৫৮৮৮৯৫৪২৬'],
-    en: ['Upazila Agriculture Office', 'Agriculturist Md. Abdun Noor', 'Additional Agriculture Officer, Shibganj', 'Office: +8802588895426'] },
+  { bn: ['উপজেলা কৃষি অফিস', 'কৃষিবিদ মো: নয়ন মিয়া', 'উপজেলা কৃষি অফিসার, শিবগঞ্জ', 'অফিস: +৮৮০২৫৮৮৮৯৫৪২৬'],
+    en: ['Upazila Agriculture Office', 'Agriculturist Md. Nayon Mia', 'Upazila Agriculture Officer, Shibganj', 'Office: +8802588895426'] },
   { bn: ['ডিজাইন ও ডেভেলপমেন্ট', 'হৃদয় হাসান রাফি', 'অ্যাপস ও ওয়েব ডেভেলপার — FDMS সিস্টেম ডেভেলপার', 'এসএসসি ২০২৬'],
     en: ['Design & development', 'Hridoy Hasan Rafi', 'Apps & Web Developer — FDMS System Developer', 'SSC 2026'] },
     ];
@@ -14080,8 +14468,9 @@
       (state.distSeasons || []).forEach(s => { if (s && s.id) seasons[s.id] = { name: String(s.name || ''), startDate: String(s.startDate || ''), endDate: String(s.endDate || ''), status: s.status === 'active' ? 'active' : 'closed' }; });
       const R = state.fertRates || {}, crops = {};
       const names = {}; CROPS.forEach(c => { if (c !== CROP_CUSTOM_VALUE) names[seasonCropKey(c)] = c; });
-      Object.keys(R.crops || {}).forEach(k => {
-        const r = {}; Object.keys(R.crops[k] || {}).forEach(f => { const v = Number(R.crops[k][f]); if (v > 0) r[f] = v; });
+      const allKeys = new Set([...Object.keys(R.crops || {}), ...Object.keys(names)]);
+      allKeys.forEach(k => {
+        const r = ratesForCrop(names[k] || k);
         if (Object.keys(r).length) crops[k] = { name: names[k] || k, r };
       });
       const def = {}; Object.keys(R.default || {}).forEach(f => { const v = Number(R.default[f]); if (v > 0) def[f] = v; });
